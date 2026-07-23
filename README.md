@@ -135,6 +135,33 @@ Disable the embedded IRC server with:
 IRC_AUTOSTART=false make recreate
 ```
 
+## Profiling the desktop
+
+If the remote desktop feels slow, enable the KasmVNC encoder statistics:
+
+```bash
+VNC_STATS=true make recreate
+make vnc-log
+```
+
+This raises the log level of KasmVNC's `EncodeManager` writer only, which
+reports framebuffer update counts, rect counts, pixel volumes, and compression
+ratios per encoding.
+
+Statistics accumulate only while a browser is connected, and the summary is
+written when that browser disconnects - so connect, use the desktop, then close
+the tab before reading the log. KasmVNC writes them to its own session log
+inside the container rather than to the container log, which is why `make logs`
+does not show them.
+
+As a baseline, a settled idle desktop reports roughly four framebuffer updates
+and about 90 KiB of traffic for a thirty second session, most of it the single
+full-screen paint sent when the client connects. Substantially more than that
+means something on the desktop is repainting continuously.
+
+The browser-side view of the same picture lives in the KasmVNC control panel:
+enable performance statistics to see CPU, network, and FPS.
+
 ## Environment
 
 Right-click the background to open the original application menu:

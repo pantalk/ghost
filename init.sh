@@ -100,6 +100,30 @@ if [ ! -s "$halloy_theme" ]; then
     echo "[station] installed the Pantalk Halloy theme"
 fi
 
+# Use a GPU when the host actually exposes one. KasmVNC always passes its
+# -drinode default, but only emits -hw3d when hw3d is true, so the default is
+# inert and the desktop silently renders in software. Hosts without a render
+# node - Podman/Docker VMs on macOS and Windows, most CI - take the else branch
+# and keep working exactly as before.
+gpu_node=""
+for node in /dev/dri/renderD*; do
+    if [ -e "$node" ]; then
+        gpu_node="$node"
+        break
+    fi
+done
+
+if [ -n "$gpu_node" ]; then
+    gpu_config="  gpu:
+    hw3d: true
+    drinode: $gpu_node"
+    echo "[station] GPU acceleration enabled via $gpu_node"
+else
+    gpu_config="  gpu:
+    hw3d: false"
+    echo "[station] no GPU render node found; using software rendering"
+fi
+
 cat > "$HOME/.vnc/kasmvnc.yaml" <<YAML
 network:
   protocol: http
@@ -113,6 +137,7 @@ desktop:
     width: $width
     height: $height
   pixel_depth: 24
+$gpu_config
 
 encoding:
   max_frame_rate: 30
@@ -121,6 +146,29 @@ security:
   brute_force_protection:
     blacklist_threshold: 0
 YAML
+
+# Optional encoder statistics. KasmVNC's EncodeManager writes "Framebuffer
+# updates" and "Max encoding time during the last N frames" to the session log,
+# which is how a session gets profiled without enabling authentication for the
+# /api/get_bottleneck_stats endpoint. Off by default because level 100 is
+# chatty.
+#
+# @note KasmVNC builds a single "writer:dest:level" argument from these three
+# keys, so log_dest must be set explicitly and the writer name replaces rather
+# than extends the default "*" - Xvnc's other log writers go quiet while this
+# is enabled. "logfile" resolves to stdout, but kasmvncserver redirects Xvnc's
+# stdout into its own per-session log at $HOME/.vnc/<hostname>:1.log, not into
+# the container log - so `make logs` does not show these. Use `make vnc-log`.
+if [ "${STATION_VNC_STATS:-false}" = "true" ]; then
+    cat >> "$HOME/.vnc/kasmvnc.yaml" <<'YAML'
+
+logging:
+  log_writer_name: EncodeManager
+  log_dest: logfile
+  level: 100
+YAML
+    echo "[station] KasmVNC encoder statistics enabled"
+fi
 
 cat > "$HOME/.vnc/xstartup" <<'XSTARTUP'
 #!/bin/bash

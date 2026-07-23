@@ -1,10 +1,19 @@
 #!/bin/bash
 # Launch Halloy with settings suitable for the KasmVNC desktop.
+#
+# @note Halloy is an Iced/wgpu application, but it is well behaved on this
+# desktop: it idles at roughly 2% of a core with a visible window and produces
+# no screen damage while static, so it costs no KasmVNC frames.  The GL backend
+# and software GL are forced because the container has no GPU.
 
 set -e
 
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-export LIBGL_ALWAYS_SOFTWARE="${LIBGL_ALWAYS_SOFTWARE:-1}"
 export WGPU_BACKEND="${WGPU_BACKEND:-gl}"
+
+# Force software GL only when the container has no render node to use.
+if ! compgen -G '/dev/dri/renderD*' >/dev/null; then
+    export LIBGL_ALWAYS_SOFTWARE="${LIBGL_ALWAYS_SOFTWARE:-1}"
+fi
 
 exec /usr/local/bin/halloy "$@"

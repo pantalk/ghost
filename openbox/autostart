@@ -27,6 +27,12 @@ fi
 export BROWSER=chromium
 
 # Make kitty open detected URLs with a simple click and delegate to xdg-open.
+#
+# @note The rendering block matters more than it looks.  Kitty is an OpenGL
+# terminal and this desktop has no GPU, so every repaint is llvmpipe work that
+# KasmVNC then has to re-encode into a frame.  A blinking cursor on its own
+# produced 17 screen changes in 12 seconds on an otherwise idle terminal;
+# disabling the blink and slowing the repaint clock takes that to zero.
 mkdir -p "$HOME/.config/kitty"
 cat > "$HOME/.config/kitty/kitty.conf" <<'KITTYCONF'
 detect_urls yes
@@ -34,8 +40,16 @@ open_url_with chromium
 url_color #5599ff
 cursor_shape block
 shell_integration no-cursor
-resize_draw_strategy static
 window_padding_width 8
+
+# Rendering - tuned for a software-rendered remote display.
+repaint_delay 40
+input_delay 8
+sync_to_monitor no
+cursor_blink_interval 0
+mouse_hide_wait 0
+disable_ligatures always
+resize_debounce_time 0.1
 KITTYCONF
 
 # Pick a wallpaper - reuse the last selection if available so the
