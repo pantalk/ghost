@@ -1,0 +1,17 @@
+# Pantalk Station's trusted local IRC room.
+theme = "pantalk"
+check_for_update_on_launch = false
+
+[servers.Station]
+server = "127.0.0.1"
+port = 6667
+use_tls = false
+nickname = "operator"
+username = "operator"
+realname = "Pantalk Station Operator"
+channels = ["#station"]
+autoconnect = true
+
+# The IRC server is local and ephemeral, so chat history negotiation only adds
+# noise.
+chathistory = false

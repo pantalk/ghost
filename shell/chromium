@@ -1,0 +1,17 @@
+#!/bin/bash
+# chromium - wrapper that launches Google Chrome with container-safe flags.
+# Placed in /usr/local/bin to override any system chromium and provide a
+# single entry point for menus, xdg-open, kitty, and CLI tools.
+
+exec /opt/google/chrome/google-chrome \
+    --no-sandbox \
+    --test-type \
+    --disable-gpu \
+    --disable-software-rasterizer \
+    --disable-dev-shm-usage \
+    --no-first-run \
+    --no-default-browser-check \
+    --disable-infobars \
+    --force-dark-mode \
+    --enable-features=WebContentsForceDark \
+    "$@"

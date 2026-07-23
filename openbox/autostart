@@ -1,0 +1,84 @@
+#!/bin/bash
+# Openbox autostart - runs when the desktop session begins.
+
+set -e
+
+# Register chromium wrapper as the default browser if MIME associations
+# are not already configured (init.sh handles this for rootfs; this fallback
+# covers standalone Docker mode).
+if [ ! -f "$HOME/.config/mimeapps.list" ]; then
+  mkdir -p "$HOME/.local/share/applications" "$HOME/.config"
+  cat > "$HOME/.local/share/applications/chromium-station.desktop" <<'CHROMEDESKTOP'
+[Desktop Entry]
+Name=Chrome
+Exec=chromium %u
+Type=Application
+MimeType=x-scheme-handler/http;x-scheme-handler/https;text/html;
+NoDisplay=true
+CHROMEDESKTOP
+  cat > "$HOME/.config/mimeapps.list" <<'MIMEAPPS'
+[Default Applications]
+x-scheme-handler/http=chromium-station.desktop
+x-scheme-handler/https=chromium-station.desktop
+text/html=chromium-station.desktop
+MIMEAPPS
+  xdg-settings set default-web-browser chromium-station.desktop 2>/dev/null || true
+fi
+export BROWSER=chromium
+
+# Make kitty open detected URLs with a simple click and delegate to xdg-open.
+mkdir -p "$HOME/.config/kitty"
+cat > "$HOME/.config/kitty/kitty.conf" <<'KITTYCONF'
+detect_urls yes
+open_url_with chromium
+url_color #5599ff
+cursor_shape block
+shell_integration no-cursor
+resize_draw_strategy static
+window_padding_width 8
+KITTYCONF
+
+# Pick a wallpaper - reuse the last selection if available so the
+# background survives VM recovery / reboots.
+wallpaper_dir="/usr/share/backgrounds/simpledesktops"
+wallpaper_state="$HOME/.wallpaper"
+
+if [ -f "$wallpaper_state" ] && [ -f "$(cat "$wallpaper_state")" ]; then
+  wallpaper="$(cat "$wallpaper_state")"
+else
+  wallpaper="$(find "$wallpaper_dir" -maxdepth 1 -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' \) | shuf -n 1)"
+  [ -n "$wallpaper" ] && echo "$wallpaper" > "$wallpaper_state"
+fi
+
+# Wallpaper watcher - KasmVNC resizes the display when the browser
+# connects, which invalidates any root pixmap set earlier.  This loop
+# detects resolution changes and re-applies the wallpaper so it is
+# always scaled to fill the screen instead of being tiled.
+if [ -n "$wallpaper" ]; then
+  rm -f "$HOME/.fehbg"
+  (
+    last_res=""
+    while true; do
+      cur_res="$(xdpyinfo -display "${DISPLAY:-:1}" 2>/dev/null \
+        | awk '/dimensions/{print $2}')"
+      if [ -n "$cur_res" ] && [ "$cur_res" != "$last_res" ]; then
+        feh --no-fehbg --bg-fill "$wallpaper"
+        last_res="$cur_res"
+      fi
+      sleep 2
+    done
+  ) &
+fi
+
+# Start a panel for taskbar / system tray.
+tint2 &
+
+# Start Cortile so tiling can be toggled on-demand.
+# Floating mode remains default because tiling_enabled=false in Cortile config.
+cortilectl start &
+
+# Open a terminal window on startup with a welcome greeting.
+kitty \
+  --override remember_window_size=no \
+  --override initial_window_width=88c \
+  -e /usr/local/bin/welcome &
