@@ -13,9 +13,14 @@ PORT ?= 6902
 RESOLUTION ?= 1920x1080
 PANTALK_AUTOSTART ?= true
 IRC_AUTOSTART ?= true
+VNC_STATS ?= false
 VOLUME_PREFIX ?= pantalk-station
 
-.PHONY: help build run recreate up test smoke stop logs status url
+# Pass a GPU through when the host has one. Empty on hosts without /dev/dri,
+# such as Podman and Docker VMs on macOS and Windows.
+GPU_DEVICE := $(shell test -d /dev/dri && echo --device=/dev/dri)
+
+.PHONY: help build run recreate up test smoke stop logs vnc-log status url
 
 help:
 	@echo "Pantalk Station local Docker workflow"
@@ -27,12 +32,14 @@ help:
 	@echo "  make test       Build, run, and smoke-test the browser endpoint"
 	@echo "  make smoke      Test the running browser endpoint"
 	@echo "  make logs       Follow container logs"
+	@echo "  make vnc-log    Follow the KasmVNC session log (encoder statistics)"
 	@echo "  make status     Show container and health status"
 	@echo "  make stop       Stop and remove the container"
 	@echo "  make url        Print the local browser URL"
 	@echo
 	@echo "Overrides: PORT=8080 RESOLUTION=1600x900 PANTALK_VERSION=0.0.8"
 	@echo "           IRC_AUTOSTART=false PANTALK_AUTOSTART=false"
+	@echo "           VNC_STATS=true  (log KasmVNC encoder statistics)"
 
 build:
 	$(DOCKER) build \
@@ -57,10 +64,12 @@ run:
 			--platform "$(PLATFORM)" \
 			--restart unless-stopped \
 			--shm-size 1g \
+			$(GPU_DEVICE) \
 			--publish "$(BIND_ADDRESS):$(PORT):6901" \
 			--env "STATION_RESOLUTION=$(RESOLUTION)" \
 			--env "PANTALK_AUTOSTART=$(PANTALK_AUTOSTART)" \
 			--env "STATION_IRC_AUTOSTART=$(IRC_AUTOSTART)" \
+			--env "STATION_VNC_STATS=$(VNC_STATS)" \
 			--volume "$(VOLUME_PREFIX)-workspace:/workspace" \
 			--volume "$(VOLUME_PREFIX)-config:/home/agent/.config/pantalk" \
 			--volume "$(VOLUME_PREFIX)-halloy:/home/agent/.config/halloy" \
@@ -103,6 +112,12 @@ stop:
 
 logs:
 	$(DOCKER) logs --follow "$(CONTAINER)"
+
+# KasmVNC writes Xvnc's output to a per-session log rather than to the
+# container log, so the VNC_STATS encoder statistics only show up here.
+vnc-log:
+	$(DOCKER) exec "$(CONTAINER)" \
+		bash -c 'tail --lines=200 --follow /home/agent/.vnc/*:1.log'
 
 status:
 	@$(DOCKER) ps --all \
