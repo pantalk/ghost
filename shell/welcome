@@ -1,0 +1,37 @@
+#!/bin/bash
+# welcome - first-launch greeting for the Pantalk Station terminal.
+# Displays ASCII art, then drops into an interactive shell.
+# Only invoked from autostart; subsequent terminals skip this.
+
+clear
+
+# ANSI color codes (using $'...' so \e is interpreted).
+C=$'\e[38;2;255;255;255m'
+D=$'\e[38;5;243m'
+B=$'\e[1m'
+R=$'\e[0m'
+
+cat <<EOF
+
+${C}░       ░░░░      ░░░   ░░░  ░░        ░░░      ░░░  ░░░░░░░░  ░░░░  ░${R}
+${C}▒  ▒▒▒▒  ▒▒  ▒▒▒▒  ▒▒    ▒▒  ▒▒▒▒▒  ▒▒▒▒▒  ▒▒▒▒  ▒▒  ▒▒▒▒▒▒▒▒  ▒▒▒  ▒▒${R}
+${C}▓       ▓▓▓  ▓▓▓▓  ▓▓  ▓  ▓  ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓  ▓▓  ▓▓▓▓▓▓▓▓     ▓▓▓▓${R}
+${C}█  ████████        ██  ██    █████  █████        ██  ████████  ███  ██${R}
+${C}█  ████████  ████  ██  ███   █████  █████  ████  ██        ██  ████  █${R}
+                                                                      
+${D}──────────────────────────────────────────────────────────────────────${R}
+${B}Pantalk Station${R}
+${D}──────────────────────────────────────────────────────────────────────${R}
+
+${B}    GET STARTED${R}
+${D}    1. Right-click the desktop and open Setup.
+       Log in to Codex or Claude.
+    2. Right-click the desktop and open Chat.
+    3. In #station, send codex: ... or claude: ...
+
+    Ctrl+Shift+T toggles tiling.${R}
+
+EOF
+
+# Hand off to an interactive login shell.
+exec bash -l

@@ -1,0 +1,5 @@
+.git
+.env
+rootfs.ext4
+pantalk
+pantalkd

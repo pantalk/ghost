@@ -1,0 +1,10 @@
+#!/bin/bash
+# Launch Halloy with settings suitable for the KasmVNC desktop.
+
+set -e
+
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export LIBGL_ALWAYS_SOFTWARE="${LIBGL_ALWAYS_SOFTWARE:-1}"
+export WGPU_BACKEND="${WGPU_BACKEND:-gl}"
+
+exec /usr/local/bin/halloy "$@"
