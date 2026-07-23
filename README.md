@@ -1,5 +1,7 @@
 # Pantalk Station
 
+<img width="3456" height="2234" alt="tpsmlhvh-6902 euw devtunnels ms_(MacBook Pro 16_)" src="https://github.com/user-attachments/assets/8dafdf9a-9f69-4961-8566-304a6b2371a7" />
+
 Pantalk Station is a browser-accessible graphical environment for running
 Pantalk and AI agents locally. It is a deliberately small fork of the original
 CBK sandbox desktop: the same Openbox environment, Simple Desktops wallpapers,
@@ -48,6 +50,23 @@ PORT=8080 RESOLUTION=1600x900 make up
 
 The default port binds only to `127.0.0.1`. Do not change `BIND_ADDRESS`
 unless the no-password environment is intentionally being exposed.
+
+## Run the published image
+
+Official releases are published to GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/pantalk/station:latest
+docker run --detach \
+  --name pantalk-station \
+  --shm-size 1g \
+  --publish 127.0.0.1:6902:6901 \
+  ghcr.io/pantalk/station:latest
+```
+
+Open <http://127.0.0.1:6902>. Use the Makefile workflow when persistent
+configuration, chat history, agent authentication, and workspace volumes are
+needed.
 
 ## Local agent room
 
@@ -130,3 +149,12 @@ Right-click the background to open the original application menu:
 
 The desktop starts in floating mode. Press `Ctrl+Shift+T` or use the menu to
 toggle tiling.
+
+## Releases
+
+Station releases are driven by the `VERSION` file. A successful CI run on
+`main` creates the matching tag, publishes the versioned image and stable
+`latest` tag to GitHub Container Registry, and creates a GitHub Release.
+
+See [RELEASES.md](RELEASES.md) for the release procedure and package visibility
+requirements.

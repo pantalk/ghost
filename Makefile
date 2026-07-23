@@ -5,7 +5,7 @@ DOCKER ?= docker
 IMAGE ?= pantalk/station:local
 CONTAINER ?= pantalk-station
 PLATFORM ?= linux/amd64
-PANTALK_VERSION ?= 0.0.7
+PANTALK_VERSION ?= 0.0.8
 HALLOY_VERSION ?= 2026.7.2
 ERGO_VERSION ?= 2.19.0
 BIND_ADDRESS ?= 127.0.0.1
@@ -31,7 +31,7 @@ help:
 	@echo "  make stop       Stop and remove the container"
 	@echo "  make url        Print the local browser URL"
 	@echo
-	@echo "Overrides: PORT=8080 RESOLUTION=1600x900 PANTALK_VERSION=0.0.7"
+	@echo "Overrides: PORT=8080 RESOLUTION=1600x900 PANTALK_VERSION=0.0.8"
 	@echo "           IRC_AUTOSTART=false PANTALK_AUTOSTART=false"
 
 build:
