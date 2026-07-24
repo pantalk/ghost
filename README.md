@@ -2,21 +2,46 @@
 
 <img width="3456" height="2234" alt="tpsmlhvh-6902 euw devtunnels ms_(MacBook Pro 16_)" src="https://github.com/user-attachments/assets/8dafdf9a-9f69-4961-8566-304a6b2371a7" />
 
-Pantalk Station is a browser-accessible graphical environment for running
-Pantalk and AI agents locally. It is a deliberately small fork of the original
-CBK sandbox desktop: the same Openbox environment, Simple Desktops wallpapers,
-Tint2 panel, Triste-Crimson theme, Kitty terminal, and on-demand Cortile tiling.
+**Station is the showcase for how easy this is.**
+
+[Pantalk](https://github.com/pantalk/pantalk) puts the coding agent you already
+run into the chat apps your team already uses - any agent, any chat - without
+welding the two together. The agent never learns which chat app it is talking
+to, and the chat app never learns which agent is answering. Station is that
+claim, assembled and running, so you can see it instead of reading about it.
+
+It is a browser-accessible Linux desktop with Pantalk, Codex, and Claude Code
+already installed and registered as agents. Boot it, log into a harness, bring
+up a deployment, and a real chat server has a real agent in it a few minutes
+later. Changing which harness answers is one `driver:` line.
+
+Station also demonstrates **one subscription, whole team**. Authenticate Codex or
+Claude Code once inside Station, and everyone reaches that single install from
+the chat client they already have open - no per-person license, no local setup,
+and nobody else needing a terminal. Pantalk keys sessions by user, channel, and
+thread, so each teammate still gets an isolated conversation.
+
+Note that the desktop itself is a single-tenant, trusted-host environment (see
+[Security posture](#harness-authentication)) - what the team shares is the
+harness *through chat*, not the desktop. Run Station somewhere you control and
+let Pantalk be the front door.
+
+Underneath, it is a deliberately small fork of the original CBK sandbox desktop:
+the same Openbox environment, Simple Desktops wallpapers, Tint2 panel,
+Triste-Crimson theme, Kitty terminal, and on-demand Cortile tiling.
 
 Station includes:
 
 - CBK branding is replaced with Pantalk Station.
 - VS Code is not installed or shown in the application menu.
 - `pantalk` and `pantalkd` are installed from the pinned Pantalk release.
-- Codex and Claude are registered as agents in the starter Pantalk config.
+- Codex and Claude Code are registered as agents in the starter Pantalk config,
+  so both harnesses are one config line away from any bot.
 - Docker persistence is included for Pantalk, agent authentication, and the
   workspace.
 - Messaging systems are added through deployment recipes rather than bundled
-  into the Station image.
+  into the Station image - the image stays transport-neutral on purpose, because
+  the point is that the platform is interchangeable.
 - A Makefile provides the local build, run, and test workflow.
 
 ## Run locally
@@ -70,8 +95,10 @@ needed.
 
 ## Deployments
 
-Supported deployments combine Station with self-hosted messaging systems while
-keeping the upstream services on their official images.
+Deployments are where the pluggability becomes visible. Each one combines the
+same unmodified Station image with a different messaging system, on that
+system's official images. Nothing about Station changes between them - only the
+Pantalk configuration mounted over the starter.
 
 The initial [Mattermost deployment](deployments/mattermost/README.md) starts
 Mattermost Team Edition, PostgreSQL, and Station; provisions `codex` and
@@ -91,15 +118,20 @@ cd deployments/ergo
 make up
 ```
 
+Two deployments, two protocols, one image, both harnesses available in each.
 Deployment recipes do not publish modified messaging-server images. See the
 [deployment index](deployments/README.md).
 
-## Agent authentication
+## Harness authentication
 
-The agent CLIs still require their normal local authentication. Their
+The harness CLIs still require their normal local authentication. Their
 configuration is persisted in the `pantalk-station-codex` and
 `pantalk-station-claude` Docker volumes. Open **Setup** in the desktop menu
 to launch either login flow without leaving Station.
+
+Authenticate one or both. Which one ends up answering a given conversation is
+decided later, in Pantalk config, and can be changed without touching either
+login.
 
 The base image does not contain a messaging server or client. Use a deployment
 recipe to connect the authenticated harnesses to Mattermost, Ergo, or another
@@ -123,9 +155,10 @@ PANTALK_VERSION=VERSION make build
 ```
 
 On first boot, Station creates `~/.config/pantalk/config.yaml` with a local
-connector plus Codex and Claude agent definitions. It does not connect to an
-external messaging service. Each deployment mounts its provider-specific
-Pantalk configuration over this starter.
+connector plus Codex and Claude Code agent definitions. It does not connect to
+an external messaging service. Each deployment mounts its provider-specific
+Pantalk configuration over this starter - the agent definitions carry across
+unchanged, which is exactly the property Station is meant to demonstrate.
 
 When upgrading an untouched image that still has the bundled IRC starter,
 Station saves it as `config.yaml.station-irc.bak` and installs the
