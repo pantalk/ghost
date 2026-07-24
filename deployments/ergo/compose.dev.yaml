@@ -8,4 +8,4 @@ services:
       target: station
       args:
         TARGETARCH: amd64
-        PANTALK_VERSION: ${PANTALK_VERSION:-0.0.10}
+        PANTALK_VERSION: ${PANTALK_VERSION:-0.0.11}

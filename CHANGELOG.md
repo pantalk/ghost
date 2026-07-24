@@ -6,6 +6,18 @@ All notable changes to Pantalk Station are documented here, following
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-07-24
+
+### Added
+
+- Preinstall Kimi Code (`@moonshot-ai/kimi-code`), so the `kimi` binary is
+  available to Pantalk's `acp` driver via `command: kimi acp`.
+
+### Changed
+
+- Bundle Pantalk 0.0.11, which adds the `acp` driver for Agent Client Protocol
+  agents and an agent-level `env` map honored by every driver.
+
 ## [0.0.5] - 2026-07-24
 
 ### Changed
