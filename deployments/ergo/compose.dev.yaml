@@ -1,0 +1,11 @@
+services:
+  station:
+    image: pantalk/station:ergo-dev
+    pull_policy: build
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      target: station
+      args:
+        TARGETARCH: amd64
+        PANTALK_VERSION: ${PANTALK_VERSION:-0.0.8}

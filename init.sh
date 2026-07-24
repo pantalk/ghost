@@ -24,11 +24,7 @@ height="${resolution#*x}"
 mkdir -p \
     "$HOME/.vnc" \
     "$HOME/.config/pantalk" \
-    "$HOME/.config/halloy" \
-    "$HOME/.config/halloy/themes" \
     "$HOME/.local/share/pantalk" \
-    "$HOME/.local/share/ergo" \
-    "$HOME/.local/share/halloy" \
     "$HOME/.local/share/applications" \
     "$HOME/.codex" \
     "$HOME/.claude" \
@@ -40,11 +36,7 @@ mkdir -p \
 chown -R agent:agent \
     "$HOME/.vnc" \
     "$HOME/.config/pantalk" \
-    "$HOME/.config/halloy" \
-    "$HOME/.config/halloy/themes" \
     "$HOME/.local/share/pantalk" \
-    "$HOME/.local/share/ergo" \
-    "$HOME/.local/share/halloy" \
     "$HOME/.local/share/applications" \
     "$HOME/.codex" \
     "$HOME/.claude" \
@@ -66,38 +58,18 @@ if [ ! -s "$PANTALK_CONFIG" ]; then
     chown agent:agent "$PANTALK_CONFIG"
     echo "[station] created starter Pantalk configuration"
 elif yq -e '
-    (.bots | length) == 1 and
-    .bots[0].name == "station-local" and
-    .bots[0].type == "local" and
-    ((.agents // []) | length) == 0
+    (.bots | length) == 2 and
+    .bots[0].name == "codex" and
+    .bots[0].type == "irc" and
+    .bots[0].endpoint == "127.0.0.1:6667" and
+    .bots[1].name == "claude" and
+    .bots[1].type == "irc" and
+    .bots[1].endpoint == "127.0.0.1:6667"
 ' "$PANTALK_CONFIG" >/dev/null 2>&1; then
-    cp --no-clobber "$PANTALK_CONFIG" "${PANTALK_CONFIG}.station-v1.bak"
+    cp --no-clobber "$PANTALK_CONFIG" "${PANTALK_CONFIG}.station-irc.bak"
     install -m 0600 -o agent -g agent \
         /usr/local/share/station/pantalk-config.yaml "$PANTALK_CONFIG"
-    echo "[station] upgraded the original starter Pantalk configuration"
-fi
-
-halloy_config="$HOME/.config/halloy/config.toml"
-halloy_theme="$HOME/.config/halloy/themes/pantalk.toml"
-
-if [ ! -s "$halloy_config" ]; then
-    install -m 0600 -o agent -g agent \
-        /usr/local/share/station/halloy-config.toml \
-        "$halloy_config"
-    echo "[station] created starter Halloy configuration"
-elif ! grep -Eq '^[[:space:]]*theme[[:space:]]*=' "$halloy_config" &&
-    grep -Fq 'server = "127.0.0.1"' "$halloy_config" &&
-    grep -Fq 'nickname = "operator"' "$halloy_config" &&
-    grep -Fq 'channels = ["#station"]' "$halloy_config"; then
-    sed -i '1itheme = "pantalk"' "$halloy_config"
-    echo "[station] enabled the Pantalk Halloy theme"
-fi
-
-if [ ! -s "$halloy_theme" ]; then
-    install -m 0644 -o agent -g agent \
-        /usr/local/share/station/halloy-pantalk-theme.toml \
-        "$halloy_theme"
-    echo "[station] installed the Pantalk Halloy theme"
+    echo "[station] migrated the bundled IRC configuration to the local starter"
 fi
 
 # Use a GPU when the host actually exposes one. KasmVNC always passes its
@@ -180,6 +152,7 @@ chown -R agent:agent "$HOME/.vnc"
 
 # KasmVNC checks for these files even though browser authentication and TLS are
 # disabled for this loopback-only local image.
+# shellcheck disable=SC2016
 su -s /bin/bash -c '
     openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
         -keyout "$HOME/.vnc/self.pem" \
@@ -188,57 +161,13 @@ su -s /bin/bash -c '
     printf "station\nstation\n" | kasmvncpasswd -u agent -wo >/dev/null 2>&1 || true
 ' agent
 
+# shellcheck disable=SC2329
 cleanup() {
     echo "[station] stopping"
     su -s /bin/bash -c 'kasmvncserver -kill :1 >/dev/null 2>&1 || true' agent
     jobs -pr | xargs -r kill 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
-
-# Generate a version-matched Ergo config from the default distributed with the
-# server. Station only listens on loopback and deliberately disables accounts,
-# registration, passwords, TLS, hostname lookup, and ident lookup.
-if [ "${STATION_IRC_AUTOSTART:-true}" = "true" ]; then
-    ergo_config="$XDG_RUNTIME_DIR/ergo.yaml"
-    cp /usr/local/share/ergo/default.yaml "$ergo_config"
-    ERGO_DB_PATH="$HOME/.local/share/ergo/ircd.db" \
-    ERGO_LOCK_PATH="$XDG_RUNTIME_DIR/ergo.lock" \
-        yq -i '
-          .network.name = "PantalkStation" |
-          .server.name = "irc.station" |
-          .server.listeners = {"127.0.0.1:6667": null} |
-          .server.lookup-hostnames = false |
-          .server.forward-confirm-hostnames = false |
-          .server.check-ident = false |
-          .server.motd = "/usr/local/share/station/ergo.motd" |
-          .accounts.authentication-enabled = false |
-          .accounts.registration.enabled = false |
-          .channels.registration.enabled = false |
-          .channels.auto-join = ["#station"] |
-          .datastore.path = strenv(ERGO_DB_PATH) |
-          .lock-file = strenv(ERGO_LOCK_PATH)
-        ' "$ergo_config"
-    chown agent:agent "$ergo_config"
-
-    su -s /bin/bash -c "
-        export HOME='$HOME'
-        cd /usr/local/share/ergo
-        exec ergo run --conf '$ergo_config'
-    " agent >>/var/log/station/ergo.log 2>&1 &
-
-    for attempt in $(seq 1 30); do
-        if ss -ltn | grep -q '127.0.0.1:6667'; then
-            echo "[station] local IRC ready at 127.0.0.1:6667"
-            break
-        fi
-        if [ "$attempt" -eq 30 ]; then
-            echo "[station] local IRC did not become ready" >&2
-            tail -n 100 /var/log/station/ergo.log >&2 || true
-            exit 1
-        fi
-        sleep 1
-    done
-fi
 
 if [ "${PANTALK_AUTOSTART:-true}" = "true" ]; then
     su -s /bin/bash -c "

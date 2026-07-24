@@ -12,11 +12,11 @@ Station includes:
 - CBK branding is replaced with Pantalk Station.
 - VS Code is not installed or shown in the application menu.
 - `pantalk` and `pantalkd` are installed from the pinned Pantalk release.
-- Halloy provides a native local agent-chat client with a black,
-  terminal-inspired Pantalk theme.
-- Ergo provides a loopback-only IRC room with no accounts or passwords.
 - Codex and Claude are registered as agents in the starter Pantalk config.
-- Docker persistence is included for IRC, Pantalk, Halloy, and agent state.
+- Docker persistence is included for Pantalk, agent authentication, and the
+  workspace.
+- Messaging systems are added through deployment recipes rather than bundled
+  into the Station image.
 - A Makefile provides the local build, run, and test workflow.
 
 ## Run locally
@@ -68,32 +68,46 @@ Open <http://127.0.0.1:6902>. Use the Makefile workflow when persistent
 configuration, chat history, agent authentication, and workspace volumes are
 needed.
 
-## Local agent room
+## Deployments
 
-Right-click the desktop and select **Chat**. Halloy connects
-automatically to the local `#station` IRC channel as `operator`. No IRC
-registration, username, or password setup is required.
+Supported deployments combine Station with self-hosted messaging systems while
+keeping the upstream services on their official images.
 
-Address either agent directly:
+The initial [Mattermost deployment](deployments/mattermost/README.md) starts
+Mattermost Team Edition, PostgreSQL, and Station; provisions `codex` and
+`claude` bot accounts; and supports both the published Station image and a local
+Dockerfile build.
 
-```text
-codex: explain the repository structure
-claude: review the current changes
+```bash
+cd deployments/mattermost
+make up
 ```
 
-`@codex` and `@claude` mentions also work. Explicit addressing prevents the
-two agents from responding to each other and creating a loop.
+The [Ergo deployment](deployments/ergo/README.md) starts an external Ergo IRC
+server, The Lounge browser client, and Station:
+
+```bash
+cd deployments/ergo
+make up
+```
+
+Deployment recipes do not publish modified messaging-server images. See the
+[deployment index](deployments/README.md).
+
+## Agent authentication
 
 The agent CLIs still require their normal local authentication. Their
 configuration is persisted in the `pantalk-station-codex` and
 `pantalk-station-claude` Docker volumes. Open **Setup** in the desktop menu
 to launch either login flow without leaving Station.
 
-This configuration deliberately assumes a trusted local environment:
+The base image does not contain a messaging server or client. Use a deployment
+recipe to connect the authenticated harnesses to Mattermost, Ergo, or another
+supported messaging system.
+
+Station deliberately assumes a trusted local environment:
 
 - KasmVNC has no browser password.
-- Ergo listens only on `127.0.0.1` inside the container.
-- IRC has no account registration, connection password, or TLS.
 - Codex may write within `/workspace` without interactive approval.
 - Claude uses its noninteractive `acceptEdits` permission mode.
 
@@ -108,31 +122,20 @@ build argument when a different release is needed:
 PANTALK_VERSION=VERSION make build
 ```
 
-On first boot, Station creates `~/.config/pantalk/config.yaml` with two IRC
-bots and two matching agent definitions:
+On first boot, Station creates `~/.config/pantalk/config.yaml` with a local
+connector plus Codex and Claude agent definitions. It does not connect to an
+external messaging service. Each deployment mounts its provider-specific
+Pantalk configuration over this starter.
 
-- IRC nickname `codex` uses the native Pantalk Codex driver.
-- IRC nickname `claude` uses the native Pantalk Claude driver.
-
-Both join `#station` through the embedded IRC server. Pantalk configuration,
-state, agent authentication, IRC state, Halloy configuration, and `/workspace`
-use persistent Docker volumes.
-
-When upgrading from the original Station starter config, the untouched
-`station-local` configuration is migrated automatically and saved beside the
-new file as `config.yaml.station-v1.bak`. Customized Pantalk configurations
-are never replaced.
+When upgrading an untouched image that still has the bundled IRC starter,
+Station saves it as `config.yaml.station-irc.bak` and installs the
+transport-neutral starter. Customized Pantalk configurations are never
+replaced.
 
 Disable automatic daemon startup with:
 
 ```bash
 PANTALK_AUTOSTART=false make recreate
-```
-
-Disable the embedded IRC server with:
-
-```bash
-IRC_AUTOSTART=false make recreate
 ```
 
 ## Profiling the desktop
@@ -169,7 +172,6 @@ Right-click the background to open the original application menu:
 - Terminal
 - Ranger file manager
 - htop task manager
-- Chat, powered by Halloy
 - Chrome
 - Setup, with Codex and Claude login actions
 - Cortile tiling controls

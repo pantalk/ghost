@@ -1,0 +1,76 @@
+name: pantalk-ergo
+
+services:
+  ergo:
+    image: ${ERGO_IMAGE:-ghcr.io/ergochat/ergo:v2.19.0}
+    init: true
+    restart: unless-stopped
+    ports:
+      - ${ERGO_BIND_ADDRESS:-127.0.0.1}:${ERGO_PORT:-6667}:6667
+    volumes:
+      - ergo-data:/ircd
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'nc -z 127.0.0.1 6667',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  thelounge:
+    image: ${THELOUNGE_IMAGE:-ghcr.io/thelounge/thelounge:4.5.2}
+    restart: unless-stopped
+    depends_on:
+      ergo:
+        condition: service_healthy
+    ports:
+      - ${THELOUNGE_BIND_ADDRESS:-127.0.0.1}:${THELOUNGE_PORT:-9000}:9000
+    environment:
+      IRC_CHANNEL: ${IRC_CHANNEL:-#station}
+    volumes:
+      - ./config/thelounge.js:/var/opt/thelounge/config.js:ro
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "const r=require('http').get('http://127.0.0.1:9000/',x=>process.exit(x.statusCode<500?0:1));r.on('error',()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  station:
+    profiles:
+      - station
+    image: ${STATION_IMAGE:-ghcr.io/pantalk/station:0.0.4}
+    platform: ${STATION_PLATFORM:-linux/amd64}
+    restart: unless-stopped
+    shm_size: 1gb
+    depends_on:
+      ergo:
+        condition: service_healthy
+    ports:
+      - ${STATION_BIND_ADDRESS:-127.0.0.1}:${STATION_PORT:-6902}:6901
+    environment:
+      PANTALK_AUTOSTART: 'true'
+      PANTALK_CONFIG: /home/agent/.config/pantalk/config.yaml
+      STATION_RESOLUTION: ${STATION_RESOLUTION:-1920x1080}
+    volumes:
+      - ./.state/pantalk:/home/agent/.config/pantalk
+      - station-state:/home/agent/.local/share/pantalk
+      - station-codex:/home/agent/.codex
+      - station-claude:/home/agent/.claude
+      - station-workspace:/workspace
+
+volumes:
+  ergo-data:
+  station-state:
+  station-codex:
+  station-claude:
+  station-workspace:

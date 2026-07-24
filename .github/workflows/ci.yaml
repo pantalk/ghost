@@ -72,14 +72,26 @@ jobs:
             --publish 127.0.0.1:6902:6901 \
             pantalk/station:ci
 
+          ready=false
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:6902/index.html >/dev/null; then
-              echo "Pantalk Station is ready"
-              exit 0
+              ready=true
+              break
             fi
             sleep 2
           done
 
-          echo "Pantalk Station did not become ready within 120 seconds" >&2
-          docker logs --tail 100 "$container" >&2 || true
-          exit 1
+          if [ "$ready" != "true" ]; then
+            echo "Pantalk Station did not become ready within 120 seconds" >&2
+            docker logs --tail 100 "$container" >&2 || true
+            exit 1
+          fi
+
+          if docker exec "$container" sh -c \
+            'command -v ergo || command -v halloy || command -v halloy-station' \
+            >/dev/null 2>&1; then
+            echo "Station still contains bundled IRC software" >&2
+            exit 1
+          fi
+
+          echo "Pantalk Station is ready and transport-neutral"

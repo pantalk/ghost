@@ -28,9 +28,8 @@ Stable releases publish the following tags:
 
 Prereleases publish the versioned tags but do not move `latest`.
 
-The current image targets `linux/amd64`. Halloy and other desktop dependencies
-must support another architecture before it can be added to the release
-platform matrix.
+The current image targets `linux/amd64`. Additional architectures can be added
+after the desktop dependencies and release build are validated on them.
 
 ## Package visibility
 

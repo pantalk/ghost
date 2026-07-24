@@ -127,8 +127,6 @@ FROM base AS base-plus
 
 ARG TARGETARCH
 ARG PANTALK_VERSION=0.0.8
-ARG HALLOY_VERSION=2026.7.2
-ARG ERGO_VERSION=2.19.0
 
 # Docker CLI.
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor \
@@ -161,33 +159,6 @@ RUN set -eux; \
     rm -rf "/tmp/${archive}" /tmp/pantalk-checksums.txt /tmp/pantalk-release; \
     pantalk version; \
     pantalkd --version
-
-# Halloy IRC client. Halloy's Linux release is currently x86_64-only. Pinning
-# the archive digest makes a changed upstream artifact fail the build.
-RUN set -eux; \
-    archive="halloy-${HALLOY_VERSION}-x86_64-linux.tar.gz"; \
-    curl -fsSL "https://github.com/squidowl/halloy/releases/download/${HALLOY_VERSION}/${archive}" \
-        -o "/tmp/${archive}"; \
-    echo "49a3591ccf5d7b9066991614fe95af13fe50ab1464b710170dc5a70db93323d8  /tmp/${archive}" \
-        | sha256sum -c -; \
-    tar -xzf "/tmp/${archive}" -C /usr/local; \
-    rm -f "/tmp/${archive}"; \
-    halloy --version
-
-# Ergo provides Station's loopback-only IRC network. Keep the full release
-# directory because Ergo loads its language catalog relative to its workdir.
-RUN set -eux; \
-    archive="ergo-${ERGO_VERSION}-linux-x86_64.tar.gz"; \
-    release_url="https://github.com/ergochat/ergo/releases/download/v${ERGO_VERSION}"; \
-    curl -fsSL "${release_url}/${archive}" -o "/tmp/${archive}"; \
-    curl -fsSL "${release_url}/ergo-${ERGO_VERSION}-checksums.txt" \
-        -o /tmp/ergo-checksums.txt; \
-    (cd /tmp && grep " ${archive}$" ergo-checksums.txt | sha256sum -c -); \
-    mkdir -p /usr/local/share/ergo; \
-    tar -xzf "/tmp/${archive}" -C /usr/local/share/ergo --strip-components=1; \
-    ln -s /usr/local/share/ergo/ergo /usr/local/bin/ergo; \
-    rm -f "/tmp/${archive}" /tmp/ergo-checksums.txt; \
-    ergo --version
 
 # Claude CLI.
 # Install as root then move binary to a global path so all users can access it.
@@ -291,19 +262,15 @@ COPY openbox/autostart /etc/xdg/openbox/autostart
 COPY cortile/cortilectl /usr/local/bin/cortilectl
 COPY shell/welcome /usr/local/bin/welcome
 COPY shell/chromium /usr/local/bin/chromium
-COPY shell/halloy /usr/local/bin/halloy-station
 RUN mkdir -p /etc/bash.bashrc.d
 COPY shell/bashrc /etc/bash.bashrc.d/pantalk-prompt.sh
 RUN echo '[ -d /etc/bash.bashrc.d ] && for f in /etc/bash.bashrc.d/*.sh; do . "$f"; done' >> /etc/bash.bashrc
 COPY browser /opt/browser
-COPY halloy/config.toml /usr/local/share/station/halloy-config.toml
-COPY halloy/themes/pantalk.toml /usr/local/share/station/halloy-pantalk-theme.toml
 COPY config/pantalk.yaml /usr/local/share/station/pantalk-config.yaml
-COPY ergo/motd /usr/local/share/station/ergo.motd
 COPY openbox/theme /usr/share/themes/Triste-Crimson/openbox-3
 COPY tint2/tint2rc /etc/xdg/tint2/tint2rc
 RUN chmod +x /etc/xdg/openbox/autostart /usr/local/bin/cortilectl /usr/local/bin/welcome \
-    /usr/local/bin/chromium /usr/local/bin/halloy-station
+    /usr/local/bin/chromium
 
 # Ensure a desktop entry exists for openbox-session so KasmVNC's
 # select-de mechanism can discover and start it.
@@ -337,7 +304,7 @@ RUN bash -c 'echo -e "kasmvnc\nkasmvnc\n" | kasmvncpasswd -u agent -wo'
 
 EXPOSE 6901
 WORKDIR /workspace
-VOLUME ["/workspace", "/home/agent/.config/pantalk", "/home/agent/.config/halloy", "/home/agent/.local/share/pantalk", "/home/agent/.local/share/ergo", "/home/agent/.local/share/halloy", "/home/agent/.codex", "/home/agent/.claude"]
+VOLUME ["/workspace", "/home/agent/.config/pantalk", "/home/agent/.local/share/pantalk", "/home/agent/.codex", "/home/agent/.claude"]
 
 
 # ═══════════════════════════════════════════════════════════════════

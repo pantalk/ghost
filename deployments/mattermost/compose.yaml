@@ -1,0 +1,97 @@
+name: pantalk-mattermost
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:18.2-alpine}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mmuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run make prepare before starting the deployment}
+      POSTGRES_DB: ${POSTGRES_DB:-mattermost}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  mattermost:
+    image: ${MATTERMOST_IMAGE:-mattermost/mattermost-team-edition:11.7.0}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - ${MATTERMOST_BIND_ADDRESS:-127.0.0.1}:${MATTERMOST_PORT:-8065}:8065
+    environment:
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: postgres://${POSTGRES_USER:-mmuser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mattermost}?sslmode=disable&connect_timeout=10
+      MM_SERVICESETTINGS_SITEURL: ${MATTERMOST_SITE_URL:-http://127.0.0.1:8065}
+      MM_SERVICESETTINGS_ENABLEBOTACCOUNTCREATION: 'true'
+      MM_TEAMSETTINGS_ENABLEOPENSERVER: 'false'
+      MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: 'false'
+      MM_EMAILSETTINGS_REQUIREEMAILVERIFICATION: 'false'
+      MM_LOGSETTINGS_CONSOLELEVEL: INFO
+    volumes:
+      - ./.state/secrets:/run/pantalk-secrets:ro
+      - mattermost-config:/mattermost/config
+      - mattermost-data:/mattermost/data
+      - mattermost-logs:/mattermost/logs
+      - mattermost-plugins:/mattermost/plugins
+      - mattermost-client-plugins:/mattermost/client/plugins
+      - mattermost-bleve:/mattermost/bleve-indexes
+    healthcheck:
+      test:
+        [
+          'CMD',
+          '/mattermost/bin/mmctl',
+          'system',
+          'status',
+          '--local',
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+
+  station:
+    profiles:
+      - station
+    image: ${STATION_IMAGE:-ghcr.io/pantalk/station:0.0.4}
+    platform: ${STATION_PLATFORM:-linux/amd64}
+    restart: unless-stopped
+    shm_size: 1gb
+    depends_on:
+      mattermost:
+        condition: service_healthy
+    ports:
+      - ${STATION_BIND_ADDRESS:-127.0.0.1}:${STATION_PORT:-6902}:6901
+    environment:
+      PANTALK_AUTOSTART: 'true'
+      PANTALK_CONFIG: /home/agent/.config/pantalk/config.yaml
+      STATION_RESOLUTION: ${STATION_RESOLUTION:-1920x1080}
+    volumes:
+      - ./.state/pantalk:/home/agent/.config/pantalk
+      - station-state:/home/agent/.local/share/pantalk
+      - station-codex:/home/agent/.codex
+      - station-claude:/home/agent/.claude
+      - station-workspace:/workspace
+
+volumes:
+  postgres-data:
+  mattermost-config:
+  mattermost-data:
+  mattermost-logs:
+  mattermost-plugins:
+  mattermost-client-plugins:
+  mattermost-bleve:
+  station-state:
+  station-codex:
+  station-claude:
+  station-workspace:
