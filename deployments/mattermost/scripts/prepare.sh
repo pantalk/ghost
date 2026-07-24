@@ -22,10 +22,10 @@ if [ ! -s "$env_file" ]; then
   cat > "$temporary_file" <<EOF
 POSTGRES_IMAGE=postgres:18.2-alpine
 MATTERMOST_IMAGE=mattermost/mattermost-team-edition:11.7.0
-STATION_IMAGE=ghcr.io/pantalk/station:0.0.5
+STATION_IMAGE=ghcr.io/pantalk/station:0.0.6
 STATION_PLATFORM=linux/amd64
 
-PANTALK_VERSION=0.0.10
+PANTALK_VERSION=0.0.11
 
 MATTERMOST_BIND_ADDRESS=127.0.0.1
 MATTERMOST_PORT=8065

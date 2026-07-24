@@ -48,7 +48,7 @@ services:
   station:
     profiles:
       - station
-    image: ${STATION_IMAGE:-ghcr.io/pantalk/station:0.0.5}
+    image: ${STATION_IMAGE:-ghcr.io/pantalk/station:0.0.6}
     platform: ${STATION_PLATFORM:-linux/amd64}
     restart: unless-stopped
     shm_size: 1gb

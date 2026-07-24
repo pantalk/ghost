@@ -126,7 +126,7 @@ RUN curl -fsSL "https://github.com/kasmtech/KasmVNC/releases/download/v${KASMVNC
 FROM base AS base-plus
 
 ARG TARGETARCH
-ARG PANTALK_VERSION=0.0.10
+ARG PANTALK_VERSION=0.0.11
 
 # Docker CLI.
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor \
@@ -136,8 +136,9 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor \
     apt-get update && apt-get install -y --no-install-recommends docker-ce-cli && \
     rm -rf /var/lib/apt/lists/*
 
-# Global npm packages.
-RUN npm install -g agent-browser @github/copilot @openai/codex @chatbotkit/cli
+# Global npm packages. @moonshot-ai/kimi-code provides the `kimi` binary used
+# with Pantalk's acp driver (`command: kimi acp`) and requires Node >= 22.19.
+RUN npm install -g agent-browser @github/copilot @openai/codex @chatbotkit/cli @moonshot-ai/kimi-code
 
 # Pantalk release. The archive checksum is verified against the checksums file
 # published with the same GitHub release.
