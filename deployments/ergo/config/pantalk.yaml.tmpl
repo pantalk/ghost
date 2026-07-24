@@ -1,0 +1,50 @@
+server:
+  notification_history_size: 1000
+  media:
+    backend: fs
+    path: /home/agent/.local/share/pantalk/media
+    attach_roots:
+      - /workspace
+
+agents:
+  - name: codex
+    driver: codex
+    workdir: /workspace
+    timeout: 900
+    instructions: |
+      You are Codex in an IRC network managed by Pantalk Station.
+      Keep channel context in mind, and respond directly.
+    codex:
+      sandbox: workspace-write
+      approval_policy: never
+
+  - name: claude
+    driver: claude
+    workdir: /workspace
+    timeout: 900
+    instructions: |
+      You are Claude in an IRC network managed by Pantalk Station.
+      Keep channel context in mind, and respond directly.
+    claude:
+      permission_mode: acceptEdits
+
+bots:
+  - name: codex
+    type: irc
+    display_name: Codex Agent
+    endpoint: ergo:6667
+    channels:
+      - '__IRC_CHANNEL__'
+    agents:
+      - agent: codex
+        when: '(direct || mentions || text matches "(?i)^codex[:,][[:space:]]") && user != "claude"'
+
+  - name: claude
+    type: irc
+    display_name: Claude Agent
+    endpoint: ergo:6667
+    channels:
+      - '__IRC_CHANNEL__'
+    agents:
+      - agent: claude
+        when: '(direct || mentions || text matches "(?i)^claude[:,][[:space:]]") && user != "codex"'

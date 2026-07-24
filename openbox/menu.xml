@@ -18,12 +18,6 @@
       </action>
     </item>
     <separator />
-    <item label="Chat">
-      <action name="Execute">
-        <command>halloy-station</command>
-      </action>
-    </item>
-    <separator />
     <item label="Chrome">
       <action name="Execute">
         <command>chromium file:///opt/browser/index.html</command>

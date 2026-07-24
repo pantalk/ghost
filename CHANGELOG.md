@@ -6,6 +6,48 @@ All notable changes to Pantalk Station are documented here, following
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-07-24
+
+### Added
+
+- Add a supported Mattermost deployment using the official Mattermost Team
+  Edition and PostgreSQL images with Pantalk Station.
+- Add idempotent Mattermost administrator, team, channel, bot, and token
+  provisioning.
+- Add published-image and local-Dockerfile Compose workflows plus a live
+  inbound and outbound messaging smoke test.
+- Add an Ergo deployment using the official Ergo and The Lounge images with
+  Pantalk Station.
+- Add a live IRC smoke test covering browser availability plus inbound and
+  outbound messages.
+
+### Changed
+
+- Make the base Station image transport-neutral. Messaging deployments now
+  provide all provider-specific services and Pantalk configuration.
+- Replace the bundled IRC starter with a local Pantalk connector while
+  preserving Codex and Claude agent definitions.
+
+### Removed
+
+- Remove Ergo, Halloy, the IRC autostart path, IRC environment variables,
+  IRC-specific volumes, and the Chat desktop entry from the Station image.
+
+## [0.0.3] - 2026-07-23
+
+### Added
+
+- Add `STATION_IRC_CHANNELS` (`IRC_CHANNELS` in the Makefile) to control which
+  channels the IRC server auto-joins clients to. The agents are only present in
+  channels Ergo puts them in, so this is what makes additional channels
+  reachable.
+
+### Changed
+
+- Let the Codex and Claude agents work in every channel instead of only
+  `#station`, and answer direct messages without needing a `codex:` or
+  `claude:` prefix.
+
 ## [0.0.2] - 2026-07-23
 
 ### Added

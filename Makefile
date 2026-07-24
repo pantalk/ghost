@@ -6,13 +6,10 @@ IMAGE ?= pantalk/station:local
 CONTAINER ?= pantalk-station
 PLATFORM ?= linux/amd64
 PANTALK_VERSION ?= 0.0.8
-HALLOY_VERSION ?= 2026.7.2
-ERGO_VERSION ?= 2.19.0
 BIND_ADDRESS ?= 127.0.0.1
 PORT ?= 6902
 RESOLUTION ?= 1920x1080
 PANTALK_AUTOSTART ?= true
-IRC_AUTOSTART ?= true
 VNC_STATS ?= false
 VOLUME_PREFIX ?= pantalk-station
 
@@ -38,7 +35,7 @@ help:
 	@echo "  make url        Print the local browser URL"
 	@echo
 	@echo "Overrides: PORT=8080 RESOLUTION=1600x900 PANTALK_VERSION=0.0.8"
-	@echo "           IRC_AUTOSTART=false PANTALK_AUTOSTART=false"
+	@echo "           PANTALK_AUTOSTART=false"
 	@echo "           VNC_STATS=true  (log KasmVNC encoder statistics)"
 
 build:
@@ -46,8 +43,6 @@ build:
 		--platform "$(PLATFORM)" \
 		--build-arg TARGETARCH=amd64 \
 		--build-arg "PANTALK_VERSION=$(PANTALK_VERSION)" \
-		--build-arg "HALLOY_VERSION=$(HALLOY_VERSION)" \
-		--build-arg "ERGO_VERSION=$(ERGO_VERSION)" \
 		--tag "$(IMAGE)" \
 		.
 
@@ -68,14 +63,10 @@ run:
 			--publish "$(BIND_ADDRESS):$(PORT):6901" \
 			--env "STATION_RESOLUTION=$(RESOLUTION)" \
 			--env "PANTALK_AUTOSTART=$(PANTALK_AUTOSTART)" \
-			--env "STATION_IRC_AUTOSTART=$(IRC_AUTOSTART)" \
 			--env "STATION_VNC_STATS=$(VNC_STATS)" \
 			--volume "$(VOLUME_PREFIX)-workspace:/workspace" \
 			--volume "$(VOLUME_PREFIX)-config:/home/agent/.config/pantalk" \
-			--volume "$(VOLUME_PREFIX)-halloy:/home/agent/.config/halloy" \
-			--volume "$(VOLUME_PREFIX)-halloy-state:/home/agent/.local/share/halloy" \
 			--volume "$(VOLUME_PREFIX)-state:/home/agent/.local/share/pantalk" \
-			--volume "$(VOLUME_PREFIX)-irc:/home/agent/.local/share/ergo" \
 			--volume "$(VOLUME_PREFIX)-codex:/home/agent/.codex" \
 			--volume "$(VOLUME_PREFIX)-claude:/home/agent/.claude" \
 			"$(IMAGE)"; \
@@ -92,16 +83,26 @@ test: up smoke
 
 smoke:
 	@echo "Waiting for Station at http://$(BIND_ADDRESS):$(PORT) ..."
-	@for attempt in $$(seq 1 30); do \
+	@ready=false; \
+	for attempt in $$(seq 1 30); do \
 		if curl --fail --silent "http://$(BIND_ADDRESS):$(PORT)/index.html" >/dev/null; then \
-			echo "Pantalk Station is ready: http://$(BIND_ADDRESS):$(PORT)"; \
-			exit 0; \
+			ready=true; \
+			break; \
 		fi; \
 		sleep 2; \
 	done; \
-	echo "Pantalk Station did not become ready within 60 seconds."; \
-	$(DOCKER) logs --tail 50 "$(CONTAINER)" || true; \
-	exit 1
+	if [ "$$ready" != "true" ]; then \
+		echo "Pantalk Station did not become ready within 60 seconds."; \
+		$(DOCKER) logs --tail 50 "$(CONTAINER)" || true; \
+		exit 1; \
+	fi; \
+	if $(DOCKER) exec "$(CONTAINER)" sh -c \
+		'command -v ergo || command -v halloy || command -v halloy-station' \
+		>/dev/null 2>&1; then \
+		echo "Station still contains bundled IRC software."; \
+		exit 1; \
+	fi; \
+	echo "Pantalk Station is ready and transport-neutral: http://$(BIND_ADDRESS):$(PORT)"
 
 stop:
 	@if $(DOCKER) container inspect "$(CONTAINER)" >/dev/null 2>&1; then \
