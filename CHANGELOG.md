@@ -6,6 +6,13 @@ All notable changes to Pantalk Station are documented here, following
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-07-24
+
+### Changed
+
+- Bundle Pantalk 0.0.10, which adds the XMPP/Jabber, Twitch, and Nostr
+  connectors.
+
 ## [0.0.4] - 2026-07-24
 
 ### Added

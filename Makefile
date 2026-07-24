@@ -5,7 +5,7 @@ DOCKER ?= docker
 IMAGE ?= pantalk/station:local
 CONTAINER ?= pantalk-station
 PLATFORM ?= linux/amd64
-PANTALK_VERSION ?= 0.0.8
+PANTALK_VERSION ?= 0.0.10
 BIND_ADDRESS ?= 127.0.0.1
 PORT ?= 6902
 RESOLUTION ?= 1920x1080
@@ -34,7 +34,7 @@ help:
 	@echo "  make stop       Stop and remove the container"
 	@echo "  make url        Print the local browser URL"
 	@echo
-	@echo "Overrides: PORT=8080 RESOLUTION=1600x900 PANTALK_VERSION=0.0.8"
+	@echo "Overrides: PORT=8080 RESOLUTION=1600x900 PANTALK_VERSION=0.0.10"
 	@echo "           PANTALK_AUTOSTART=false"
 	@echo "           VNC_STATS=true  (log KasmVNC encoder statistics)"
 

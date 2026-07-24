@@ -126,7 +126,7 @@ RUN curl -fsSL "https://github.com/kasmtech/KasmVNC/releases/download/v${KASMVNC
 FROM base AS base-plus
 
 ARG TARGETARCH
-ARG PANTALK_VERSION=0.0.8
+ARG PANTALK_VERSION=0.0.10
 
 # Docker CLI.
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor \
