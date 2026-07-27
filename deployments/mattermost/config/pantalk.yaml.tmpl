@@ -2,7 +2,7 @@ server:
   notification_history_size: 1000
   media:
     backend: fs
-    path: /home/agent/.local/share/pantalk/media
+    path: /home/ghost/.local/share/pantalk/media
     attach_roots:
       - /workspace
 
@@ -12,7 +12,7 @@ agents:
     workdir: /workspace
     timeout: 900
     instructions: |
-      You are Codex in a Mattermost workspace managed by Pantalk Station.
+      You are Codex in a Mattermost workspace managed by Pantalk Ghost.
       Keep channel and thread context in mind, and respond directly.
     codex:
       sandbox: workspace-write
@@ -23,7 +23,7 @@ agents:
     workdir: /workspace
     timeout: 900
     instructions: |
-      You are Claude in a Mattermost workspace managed by Pantalk Station.
+      You are Claude in a Mattermost workspace managed by Pantalk Ghost.
       Keep channel and thread context in mind, and respond directly.
     claude:
       permission_mode: acceptEdits

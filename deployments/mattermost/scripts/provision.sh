@@ -134,12 +134,12 @@ ensure_bot_token() {
 
   if mmctl_remote bot list --json 2>/dev/null |
     json_has_name username "$username"; then
-    output="$(mmctl_remote token generate "$username" pantalk-station --json)"
+    output="$(mmctl_remote token generate "$username" pantalk-ghost --json)"
   else
     output="$(
       mmctl_remote bot create "$username" \
         --display-name "$display_name" \
-        --description "Managed by Pantalk Station" \
+        --description "Managed by Pantalk Ghost" \
         --with-token \
         --json
     )"
@@ -236,12 +236,12 @@ mmctl_remote channel users add \
 
 render_pantalk_config "$codex_token" "$claude_token"
 
-if [ -n "$(compose ps --status running --quiet station 2>/dev/null)" ]; then
+if [ -n "$(compose ps --status running --quiet ghost 2>/dev/null)" ]; then
   compose exec \
     -T \
-    --user agent \
+    --user ghost \
     --env XDG_RUNTIME_DIR=/run/user/1000 \
-    station \
+    ghost \
     pantalk reload >/dev/null
 fi
 

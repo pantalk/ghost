@@ -1,10 +1,105 @@
 # Changelog
 
-All notable changes to Pantalk Station are documented here, following
+All notable changes to Pantalk Ghost are documented here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+### Added
+
+- Add a guided runtime authentication helper for Codex device, browser, and
+  API-key login; Claude subscription, Console, setup-token, and SSO login; and
+  Kimi Code's interactive `/login` flow.
+- Add persistent Kimi Code state, Ranger workspace/home bookmarks, a Pantalk
+  daemon status badge, desktop log actions, a custom favicon, and reproducible
+  image-size reporting.
+- Add fast shell, behavior, and pinned-metadata checks and run them before the
+  CI image build.
+- Add the Pantalk mascot to the lower-left of the KasmVNC client page: an
+  unframed ghost drifting gently in place over a soft accent glow, reusing the
+  site's palette, float animation, and hover treatment. It is drawn by the
+  viewer's browser rather than the remote desktop, so it adds no X client and
+  no encoder load.
+- Add `ghost-harness`, which opens the agent harness the operator last signed
+  in to, bound to `Ctrl+Shift+G` and to clicking the desktop mascot. Signing in
+  through `agent-runtime-login` is what selects the harness, so there is no
+  separate preference to maintain; a status check is not a sign-in and leaves
+  the selection alone. The harness starts in `/workspace`, matching the
+  `workdir` the chat-side agents use, rather than the session home directory
+  Openbox would otherwise pass down. Repeated activation raises the existing
+  window instead of stacking terminals.
+- Declare Codex's sandbox mode as `danger-full-access` at boot. Codex sandboxes
+  commands with bubblewrap, which cannot create a user namespace inside the
+  container, so no sandbox mode is enforceable and Codex warned on every start
+  about falling back to its bundled copy. Installing the distro package only
+  adds a second binary that fails identically. The container is the boundary;
+  the setting now says so. Override with `GHOST_CODEX_SANDBOX_MODE`.
+- Record the workspace as trusted for Codex and Claude Code at boot, so the
+  harness opened from the desktop does not sit on a per-directory trust prompt
+  for a directory the chat-side agents already work in unattended. This grants
+  no access the chat path did not already have; set `GHOST_TRUST_WORKSPACE` to
+  `false` to keep both prompts.
+
+### Changed
+
+- Pin GTK and Chrome's Linux UI typography to Noto Sans 9, matching every
+  Openbox title, menu, and on-screen-display font declaration instead of
+  inheriting GTK's larger Sans 10 default.
+- Give Chrome a self-contained near-black GTK system theme that darkens native
+  menus and popups as well as the tab strip, active tab, toolbar, controls, and
+  address field; render Chrome's window controls from the same XBM masks and
+  state colors as Openbox, square the GTK-controlled outer frame corners, and
+  replace the bundled welcome card with the terminal's ASCII banner on pure
+  black.
+- Outline the focused window in white. The wallpaper and every window
+  frame are near-black, so an unfocused-looking window had no visible edge
+  against the desktop; unfocused frames stay dark so exactly one window
+  reads as active.
+- Remove the window handle, which drew a second line under the client area with
+  a resize grip boxed off at each end. Resizing stays available through the
+  window edges and corners and through Alt+right-drag anywhere on the frame.
+- Start terminals in `/workspace` instead of the home directory, so the
+  desktop and the chat-side agents work in the same tree. Openbox chdirs to
+  `$HOME` at startup whatever directory it was started from and hands that to
+  everything it launches, so this is set in the shell - the one place every
+  terminal passes through - and only when the shell landed in `$HOME`, which
+  leaves non-interactive shells and deliberate directories alone.
+- Widen the window grab margin with client padding. Removing the handle left a
+  1px frame to grab at the bottom against a 28px titlebar, so the bottom
+  corners were nearly unhittable. Client padding adds frame around the client
+  and paints it in the frame background, taking the grabbable ring from 1px to
+  7px while the focus outline stays 1px.
+- Rename the product to Pantalk Ghost across the repository, container image,
+  local directory, runtime identifiers, deployment resources, and
+  documentation.
+- Rename the desktop account and home directory to `ghost` and `/home/ghost`,
+  and render the `@ghost` shell prompt in neon green.
+- Replace the random third-party wallpaper set with a deterministic
+  Pantalk-branded desktop background based on the site's palette and subtle
+  grid treatment.
+- Pin Node.js tooling and all globally installed agent CLIs, and use the pinned
+  Claude Code npm package instead of the floating installer.
+- Pass only DRI render nodes into the container and enable hardware rendering
+  only when the desktop user can actually open one.
+- Normalize named-volume ownership once per volume lifetime instead of walking
+  growing workspace and runtime trees on every boot.
+- Remove the unused hardware X server and `x11-xserver-utils` dependency chain;
+  KasmVNC already supplies Xvnc.
+- Keep the image-owned Tint2 configuration authoritative, add conventional
+  Kitty copy/paste bindings, reduce the Docker build context, and skip full CI
+  builds for documentation-only changes.
+
+### Fixed
+
+- Keep the KasmVNC browser title stable instead of replacing it with a
+  container hostname after connection.
+- Replace the obsolete welcome-screen instruction for the removed bundled Chat
+  menu with the current transport-neutral deployment flow.
+- Version the injected mascot asset URLs by content hash. KasmVNC serves them
+  with no cache-control, etag, or last-modified, so browsers had nothing to
+  revalidate against and kept running a stale overlay against a freshly built
+  image.
 
 ## [0.0.6] - 2026-07-24
 
@@ -30,19 +125,19 @@ All notable changes to Pantalk Station are documented here, following
 ### Added
 
 - Add a supported Mattermost deployment using the official Mattermost Team
-  Edition and PostgreSQL images with Pantalk Station.
+  Edition and PostgreSQL images with Pantalk Ghost.
 - Add idempotent Mattermost administrator, team, channel, bot, and token
   provisioning.
 - Add published-image and local-Dockerfile Compose workflows plus a live
   inbound and outbound messaging smoke test.
 - Add an Ergo deployment using the official Ergo and The Lounge images with
-  Pantalk Station.
+  Pantalk Ghost.
 - Add a live IRC smoke test covering browser availability plus inbound and
   outbound messages.
 
 ### Changed
 
-- Make the base Station image transport-neutral. Messaging deployments now
+- Make the base Ghost image transport-neutral. Messaging deployments now
   provide all provider-specific services and Pantalk configuration.
 - Replace the bundled IRC starter with a local Pantalk connector while
   preserving Codex and Claude agent definitions.
@@ -50,13 +145,13 @@ All notable changes to Pantalk Station are documented here, following
 ### Removed
 
 - Remove Ergo, Halloy, the IRC autostart path, IRC environment variables,
-  IRC-specific volumes, and the Chat desktop entry from the Station image.
+  IRC-specific volumes, and the Chat desktop entry from the Ghost image.
 
 ## [0.0.3] - 2026-07-23
 
 ### Added
 
-- Add `STATION_IRC_CHANNELS` (`IRC_CHANNELS` in the Makefile) to control which
+- Add `GHOST_IRC_CHANNELS` (`IRC_CHANNELS` in the Makefile) to control which
   channels the IRC server auto-joins clients to. The agents are only present in
   channels Ergo puts them in, so this is what makes additional channels
   reachable.
@@ -64,14 +159,14 @@ All notable changes to Pantalk Station are documented here, following
 ### Changed
 
 - Let the Codex and Claude agents work in every channel instead of only
-  `#station`, and answer direct messages without needing a `codex:` or
+  `#ghost`, and answer direct messages without needing a `codex:` or
   `claude:` prefix.
 
 ## [0.0.2] - 2026-07-23
 
 ### Added
 
-- Add optional KasmVNC encoder statistics behind `STATION_VNC_STATS`, reporting
+- Add optional KasmVNC encoder statistics behind `GHOST_VNC_STATS`, reporting
   framebuffer update counts, rect counts, pixel volumes, and compression ratios
   per session.
 - Add a `make vnc-log` target. KasmVNC writes Xvnc's output to a per-session log
@@ -98,7 +193,7 @@ All notable changes to Pantalk Station are documented here, following
 
 ### Added
 
-- Add the browser-accessible Pantalk Station desktop image.
+- Add the browser-accessible Pantalk Ghost desktop image.
 - Include Pantalk, Codex, Claude, Halloy, and a trusted local IRC room.
 - Add persistent Docker volumes and a local Makefile workflow.
 - Add automated validation, version tagging, GitHub releases, and GHCR image

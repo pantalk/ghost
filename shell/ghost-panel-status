@@ -1,0 +1,10 @@
+#!/bin/bash
+# Render the compact Pantalk daemon state shown by the Tint2 panel executor.
+
+set -euo pipefail
+
+if pgrep -u "$(id -u)" -x pantalkd >/dev/null 2>&1; then
+    printf '<span foreground="#5fd787">●</span> running\n'
+else
+    printf '<span foreground="#ffaf00">●</span> stopped\n'
+fi

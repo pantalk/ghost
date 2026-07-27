@@ -1,14 +1,14 @@
 # Ergo Deployment
 
 This deployment combines the official Ergo IRC server and The Lounge browser
-client images with Pantalk Station. Station runs `pantalkd`, Codex, and Claude
+client images with Pantalk Ghost. Ghost runs `pantalkd`, Codex, and Claude
 in a persistent graphical agent environment.
 
 The deployment provides:
 
 - An Ergo IRC network persisted in a Docker volume.
 - A browser client locked to the local Ergo network.
-- A shared `#station` channel.
+- A shared `#ghost` channel.
 - `codex` and `claude` IRC bots connected through Pantalk.
 - Direct-message, mention, and explicit `codex:` or `claude:` routing.
 
@@ -23,7 +23,7 @@ agent conversations.
 - Bash and curl
 - An amd64 host or Docker support for amd64 emulation
 
-## Start with the published Station image
+## Start with the published Ghost image
 
 ```bash
 make up
@@ -32,13 +32,13 @@ make up
 Open:
 
 - The Lounge: <http://127.0.0.1:9000>
-- Station: <http://127.0.0.1:6902>
+- Ghost: <http://127.0.0.1:6902>
 
 The Lounge runs in public mode and does not require a login. Its connection
-screen is locked to the local Ergo server and joins `#station` automatically.
+screen is locked to the local Ergo server and joins `#ghost` automatically.
 Choose a different nickname if `operator` is already connected.
 
-Open **Setup** in the Station desktop to authenticate Codex and Claude. After
+Open **Setup** in the Ghost desktop to authenticate Codex and Claude. After
 login, send a direct message to `codex` or `claude`, mention them, or start a
 channel message with `codex:` or `claude:`.
 
@@ -48,16 +48,16 @@ Show all local endpoints:
 make urls
 ```
 
-## Build Station locally
+## Build Ghost locally
 
-Use the repository Dockerfile instead of the published Station image:
+Use the repository Dockerfile instead of the published Ghost image:
 
 ```bash
 make dev
 ```
 
-`compose.dev.yaml` builds the `station` target with the Station repository root
-as its Docker context. Station remains transport-neutral; this deployment
+`compose.dev.yaml` builds the `ghost` target with the Ghost repository root
+as its Docker context. Ghost remains transport-neutral; this deployment
 connects Pantalk to the external Ergo container.
 
 ## Validate and test
@@ -95,21 +95,21 @@ make down
 ## Configuration and state
 
 The first `make up` copies `.env.example` to the ignored `.env` file. Edit it
-to change image versions, bind addresses, ports, the IRC channel, or the Station
+to change image versions, bind addresses, ports, the IRC channel, or the Ghost
 resolution. `make up` renders the Pantalk configuration under the ignored
 `.state` directory.
 
 Ergo stores its generated configuration, account data, registered channels,
-history, and TLS keys in the `ergo-data` Docker volume. Station keeps agent
+history, and TLS keys in the `ergo-data` Docker volume. Ghost keeps agent
 authentication, Pantalk state, and `/workspace` in separate persistent volumes.
 
 ## Security
 
-The IRC, web-client, and Station ports bind to `127.0.0.1` by default. The
+The IRC, web-client, and Ghost ports bind to `127.0.0.1` by default. The
 deployment intentionally uses an open local IRC network and The Lounge public
 mode for straightforward local access.
 
-Do not expose these ports to an untrusted network. Station's desktop has no
+Do not expose these ports to an untrusted network. Ghost's desktop has no
 browser password, and the generated agents can write inside `/workspace`
 without interactive approval.
 

@@ -81,7 +81,7 @@ border_color_pressed = #ffffff 0
 
 #-------------------------------------
 # Panel
-panel_items = PTSC
+panel_items = PTSEC
 panel_size = 100% 36
 panel_margin = 16 8
 panel_padding = 4 4 4
@@ -165,6 +165,27 @@ systray_icon_size = 18
 systray_icon_asb = 100 0 0
 systray_monitor = 1
 systray_name_filter =
+
+#-------------------------------------
+# Pantalk status
+execp = new
+execp_command = ghost-panel-status
+execp_interval = 5
+execp_continuous = 0
+execp_has_icon = 0
+execp_tooltip = Click to follow the Pantalk daemon log
+execp_font = Noto Sans 9
+execp_font_color = #cccccc 100
+execp_markup = 1
+execp_background_id = 6
+execp_centered = 1
+execp_padding = 8 4 0
+execp_monitor = all
+execp_lclick_command = kitty --title "Pantalk Daemon Log" -e bash -lc "tail --lines=200 --follow /var/log/ghost/pantalkd.log"
+execp_mclick_command =
+execp_rclick_command =
+execp_uwheel_command =
+execp_dwheel_command =
 
 #-------------------------------------
 # Clock

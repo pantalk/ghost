@@ -9,10 +9,10 @@ DEV := $(BASE) -f compose.dev.yaml
 .PHONY: help prepare up dev provision validate smoke test logs status down credentials
 
 help:
-	@echo "Pantalk Station with Mattermost"
+	@echo "Pantalk Ghost with Mattermost"
 	@echo
-	@echo "  make up           Start with the published Station image"
-	@echo "  make dev          Build Station locally, then start everything"
+	@echo "  make up           Start with the published Ghost image"
+	@echo "  make dev          Build Ghost locally, then start everything"
 	@echo "  make provision    Re-run idempotent Mattermost provisioning"
 	@echo "  make validate     Validate scripts and Compose configuration"
 	@echo "  make smoke        Test the running deployment"
@@ -28,16 +28,16 @@ prepare:
 up: prepare
 	$(BASE) up --detach postgres mattermost
 	@./scripts/provision.sh
-	$(BASE) --profile station up --detach station
+	$(BASE) --profile ghost up --detach ghost
 	@echo "Mattermost: $$(awk -F= '/^MATTERMOST_SITE_URL=/{print $$2}' .env)"
-	@echo "Station:    http://127.0.0.1:$$(awk -F= '/^STATION_PORT=/{print $$2}' .env)"
+	@echo "Ghost:       http://127.0.0.1:$$(awk -F= '/^GHOST_PORT=/{print $$2}' .env)"
 
 dev: prepare
 	$(BASE) up --detach postgres mattermost
 	@./scripts/provision.sh
-	$(DEV) --profile station up --detach --build station
+	$(DEV) --profile ghost up --detach --build ghost
 	@echo "Mattermost: $$(awk -F= '/^MATTERMOST_SITE_URL=/{print $$2}' .env)"
-	@echo "Station:    http://127.0.0.1:$$(awk -F= '/^STATION_PORT=/{print $$2}' .env)"
+	@echo "Ghost:       http://127.0.0.1:$$(awk -F= '/^GHOST_PORT=/{print $$2}' .env)"
 
 provision: prepare
 	$(BASE) up --detach postgres mattermost
@@ -56,13 +56,13 @@ smoke:
 test: dev smoke
 
 logs:
-	$(BASE) --profile station logs --follow
+	$(BASE) --profile ghost logs --follow
 
 status:
-	$(BASE) --profile station ps
+	$(BASE) --profile ghost ps
 
 down:
-	$(BASE) --profile station down
+	$(BASE) --profile ghost down
 
 credentials:
 	@test -s .env || { echo "Missing .env. Run make prepare first." >&2; exit 1; }

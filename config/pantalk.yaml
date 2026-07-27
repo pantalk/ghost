@@ -2,7 +2,7 @@ server:
   notification_history_size: 1000
   media:
     backend: fs
-    path: /home/agent/.local/share/pantalk/media
+    path: /home/ghost/.local/share/pantalk/media
     attach_roots:
       - /workspace
 
@@ -12,7 +12,7 @@ agents:
     workdir: /workspace
     timeout: 900
     instructions: |
-      You are Codex in Pantalk Station.
+      You are Codex in Pantalk Ghost.
       Help the operator with the files in /workspace and respond directly.
     codex:
       sandbox: workspace-write
@@ -23,7 +23,7 @@ agents:
     workdir: /workspace
     timeout: 900
     instructions: |
-      You are Claude in Pantalk Station.
+      You are Claude in Pantalk Ghost.
       Help the operator with the files in /workspace and respond directly.
     claude:
       permission_mode: acceptEdits
@@ -32,5 +32,5 @@ agents:
 # external messaging service. Deployments mount their own provider-specific
 # configuration over this file.
 bots:
-  - name: station-local
+  - name: ghost-local
     type: local

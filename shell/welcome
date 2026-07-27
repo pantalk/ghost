@@ -1,5 +1,5 @@
 #!/bin/bash
-# welcome - first-launch greeting for the Pantalk Station terminal.
+# welcome - first-launch greeting for the Pantalk Ghost terminal.
 # Displays ASCII art, then drops into an interactive shell.
 # Only invoked from autostart; subsequent terminals skip this.
 
@@ -20,16 +20,19 @@ ${C}█  ████████        ██  ██    █████  █�
 ${C}█  ████████  ████  ██  ███   █████  █████  ████  ██        ██  ████  █${R}
                                                                       
 ${D}──────────────────────────────────────────────────────────────────────${R}
-${B}Pantalk Station${R}
+${B}Pantalk Ghost${R}
 ${D}──────────────────────────────────────────────────────────────────────${R}
 
 ${B}    GET STARTED${R}
 ${D}    1. Right-click the desktop and open Setup.
-       Log in to Codex or Claude.
-    2. Right-click the desktop and open Chat.
-    3. In #station, send codex: ... or claude: ...
+       Sign in to Codex, Claude Code, or Kimi Code.
+    2. Start a deployment recipe or configure a messaging connector.
+    3. Message the configured agent from that provider's chat client.
 
-    Ctrl+Shift+T toggles tiling.${R}
+    Ctrl+Shift+G opens the harness you last signed in to, as does clicking
+    the ghost in the lower-left corner.
+    Ctrl+Shift+T toggles tiling. File Manager opens /workspace.
+    In Ranger, press 'W for Workspace or 'H for Home.${R}
 
 EOF
 

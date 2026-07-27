@@ -29,7 +29,7 @@ services:
     ports:
       - ${THELOUNGE_BIND_ADDRESS:-127.0.0.1}:${THELOUNGE_PORT:-9000}:9000
     environment:
-      IRC_CHANNEL: ${IRC_CHANNEL:-#station}
+      IRC_CHANNEL: ${IRC_CHANNEL:-#ghost}
     volumes:
       - ./config/thelounge.js:/var/opt/thelounge/config.js:ro
     healthcheck:
@@ -45,32 +45,34 @@ services:
       retries: 20
       start_period: 10s
 
-  station:
+  ghost:
     profiles:
-      - station
-    image: ${STATION_IMAGE:-ghcr.io/pantalk/station:0.0.6}
-    platform: ${STATION_PLATFORM:-linux/amd64}
+      - ghost
+    image: ${GHOST_IMAGE:-ghcr.io/pantalk/ghost:0.0.6}
+    platform: ${GHOST_PLATFORM:-linux/amd64}
     restart: unless-stopped
     shm_size: 1gb
     depends_on:
       ergo:
         condition: service_healthy
     ports:
-      - ${STATION_BIND_ADDRESS:-127.0.0.1}:${STATION_PORT:-6902}:6901
+      - ${GHOST_BIND_ADDRESS:-127.0.0.1}:${GHOST_PORT:-6902}:6901
     environment:
       PANTALK_AUTOSTART: 'true'
-      PANTALK_CONFIG: /home/agent/.config/pantalk/config.yaml
-      STATION_RESOLUTION: ${STATION_RESOLUTION:-1920x1080}
+      PANTALK_CONFIG: /home/ghost/.config/pantalk/config.yaml
+      GHOST_RESOLUTION: ${GHOST_RESOLUTION:-1920x1080}
     volumes:
-      - ./.state/pantalk:/home/agent/.config/pantalk
-      - station-state:/home/agent/.local/share/pantalk
-      - station-codex:/home/agent/.codex
-      - station-claude:/home/agent/.claude
-      - station-workspace:/workspace
+      - ./.state/pantalk:/home/ghost/.config/pantalk
+      - ghost-state:/home/ghost/.local/share/pantalk
+      - ghost-codex:/home/ghost/.codex
+      - ghost-claude:/home/ghost/.claude
+      - ghost-kimi:/home/ghost/.kimi
+      - ghost-workspace:/workspace
 
 volumes:
   ergo-data:
-  station-state:
-  station-codex:
-  station-claude:
-  station-workspace:
+  ghost-state:
+  ghost-codex:
+  ghost-claude:
+  ghost-kimi:
+  ghost-workspace:

@@ -71,7 +71,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
           labels: |
-            org.opencontainers.image.title=Pantalk Station
+            org.opencontainers.image.title=Pantalk Ghost
             org.opencontainers.image.description=Browser-accessible Pantalk desktop environment
 
       - name: Build and publish image
