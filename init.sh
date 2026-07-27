@@ -80,6 +80,14 @@ if [ ! -e "$ownership_stamp" ]; then
     echo "[ghost] normalized ownership of the persistent volumes"
 fi
 
+# Seed image-owned workspace defaults without replacing files in the persistent
+# workspace. Keeping the source outside /workspace makes new defaults available
+# to both brand-new volumes and existing volumes after an image upgrade.
+workspace_seed_dir="/usr/local/share/ghost/workspace"
+if [ -d "$workspace_seed_dir" ]; then
+    cp --archive --update=none "$workspace_seed_dir/." /workspace/
+fi
+
 chmod 700 "$XDG_RUNTIME_DIR" "$HOME/.config/pantalk"
 chmod 1777 /tmp/.X11-unix
 

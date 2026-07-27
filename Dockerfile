@@ -302,6 +302,7 @@ COPY shell/bashrc /etc/bash.bashrc.d/pantalk-prompt.sh
 RUN echo '[ -d /etc/bash.bashrc.d ] && for f in /etc/bash.bashrc.d/*.sh; do . "$f"; done' >> /etc/bash.bashrc
 COPY browser /opt/browser
 COPY config/pantalk.yaml /usr/local/share/ghost/pantalk-config.yaml
+COPY --chown=ghost:ghost workspace /usr/local/share/ghost/workspace
 COPY openbox/theme /usr/share/themes/Triste-Crimson/openbox-3
 COPY tint2/tint2rc /etc/xdg/tint2/tint2rc
 RUN chmod +x \

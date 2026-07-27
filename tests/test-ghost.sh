@@ -4,7 +4,8 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 overlay_test_dir="$(mktemp -d)"
-trap 'rm -rf "$overlay_test_dir"' EXIT
+workspace_test_dir="$(mktemp -d)"
+trap 'rm -rf "$overlay_test_dir" "$workspace_test_dir"' EXIT
 
 legacy_names=(
     "Pantalk St""ation"
@@ -65,6 +66,18 @@ grep -Fq 'tint2 -c /etc/xdg/tint2/tint2rc' \
 
 grep -Fq 'ENV HOME=/home/ghost' "$project_dir/Dockerfile"
 grep -Fq 'USER ghost' "$project_dir/Dockerfile"
+grep -Fq \
+    'COPY --chown=ghost:ghost workspace /usr/local/share/ghost/workspace' \
+    "$project_dir/Dockerfile"
+grep -Fq \
+    'cp --archive --update=none "$workspace_seed_dir/." /workspace/' \
+    "$project_dir/init.sh"
+grep -Fq '# Pantalk Ghost Workspace' "$project_dir/workspace/AGENT.md"
+cp --archive --update=none "$project_dir/workspace/." "$workspace_test_dir/"
+cmp "$project_dir/workspace/AGENT.md" "$workspace_test_dir/AGENT.md"
+printf 'custom workspace instructions\n' > "$workspace_test_dir/AGENT.md"
+cp --archive --update=none "$project_dir/workspace/." "$workspace_test_dir/"
+grep -Fxq 'custom workspace instructions' "$workspace_test_dir/AGENT.md"
 grep -Fq 'background: #000;' "$project_dir/browser/index.html"
 grep -Fq '░       ░░░░      ░░░' "$project_dir/browser/index.html"
 if grep -Fq 'Welcome to Pantalk Ghost' "$project_dir/browser/index.html"; then
