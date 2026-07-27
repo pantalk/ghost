@@ -4,11 +4,41 @@
 
 ## Quick start
 
-You need Docker on an AMD64 or ARM64 host. Start the published image:
+Ghost publishes native AMD64 and ARM64 images. Choose the container runtime
+installed on your host.
+
+### Docker
 
 ```bash
 docker run --detach \
   --name pantalk-ghost \
+  --shm-size 1g \
+  --publish 127.0.0.1:6902:6901 \
+  ghcr.io/pantalk/ghost:latest
+```
+
+### Podman
+
+```bash
+podman run --detach \
+  --name pantalk-ghost \
+  --shm-size 1g \
+  --publish 127.0.0.1:6902:6901 \
+  ghcr.io/pantalk/ghost:latest
+```
+
+### Apple container
+
+Apple's [`container`](https://github.com/apple/container) tool requires Apple
+silicon and macOS 26 or later. Start its service once, then run Ghost with
+enough memory for the desktop and agent harness:
+
+```bash
+container system start
+
+container run --detach \
+  --name pantalk-ghost \
+  --memory 4g \
   --shm-size 1g \
   --publish 127.0.0.1:6902:6901 \
   ghcr.io/pantalk/ghost:latest
@@ -46,6 +76,12 @@ docker run --detach \
   --volume pantalk-ghost-kimi:/home/ghost/.kimi \
   ghcr.io/pantalk/ghost:latest
 ```
+
+Podman accepts the same command with `podman` in place of `docker`. With
+Apple's tool, use `container` in place of `docker`, remove
+`--restart unless-stopped`, and add `--memory 4g`. Apple `container` preserves
+the named volumes and stopped container but does not expose a Docker-style
+restart policy; restart it with `container start pantalk-ghost`.
 
 Pantalk configuration and history, runtime credentials, and workspace files
 then survive container recreation and image upgrades.
