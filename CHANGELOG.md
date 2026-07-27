@@ -6,6 +6,8 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-07-27
+
 ### Added
 
 - Add an image-owned `workspace/` seed with a default `AGENT.md`. Container
