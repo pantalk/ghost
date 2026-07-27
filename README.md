@@ -1,8 +1,94 @@
 # Pantalk Ghost
 
+**An always-on agent computer for the harnesses you already use.**
+
+## Quick start
+
+You need Docker on an `amd64` host, or a Docker installation capable of
+running `linux/amd64` images. Start the published image:
+
+```bash
+docker run --detach \
+  --name pantalk-ghost \
+  --platform linux/amd64 \
+  --shm-size 1g \
+  --publish 127.0.0.1:6902:6901 \
+  ghcr.io/pantalk/ghost:latest
+```
+
+Open <http://127.0.0.1:6902>. This is the Ghost computer itself, presented
+through KasmVNC rather than a separate dashboard. Open **Setup** from the
+desktop menu and sign in to Codex, Claude Code, or Kimi Code.
+
+The standalone image starts with Pantalk's local connector. To connect the
+authenticated harness to a real chat system, use one of the
+[deployment recipes](#deployments).
+
 <img width="2560" height="1440" alt="Pantalk Ghost running as a persistent Linux agent computer in a browser" src="https://github.com/user-attachments/assets/e6d199ee-9a8e-49a6-a8a6-a9ff320bd490" />
 
-**An always-on agent computer for the harnesses you already use.**
+This short command is for trying Ghost. Its state directories use anonymous
+volumes, so replacing the container loses their association and leaves the old
+volumes behind on disk. Use named volumes for a computer you intend to keep.
+
+### Persistent setup
+
+For a long-lived Ghost, add a restart policy and name every persistent volume:
+
+```bash
+docker run --detach \
+  --name pantalk-ghost \
+  --platform linux/amd64 \
+  --restart unless-stopped \
+  --shm-size 1g \
+  --publish 127.0.0.1:6902:6901 \
+  --volume pantalk-ghost-workspace:/workspace \
+  --volume pantalk-ghost-config:/home/ghost/.config/pantalk \
+  --volume pantalk-ghost-state:/home/ghost/.local/share/pantalk \
+  --volume pantalk-ghost-codex:/home/ghost/.codex \
+  --volume pantalk-ghost-claude:/home/ghost/.claude \
+  --volume pantalk-ghost-kimi:/home/ghost/.kimi \
+  ghcr.io/pantalk/ghost:latest
+```
+
+Pantalk configuration and history, runtime credentials, and workspace files
+then survive container recreation and image upgrades.
+
+Create another container with a different name and volume prefix when each
+agent needs its own identity, credentials, browser sessions, workspace, and
+lifecycle.
+
+### Build from source
+
+From this directory, build and start the local image:
+
+```bash
+make up
+```
+
+Open <http://127.0.0.1:6902>. To select another port or initial resolution:
+
+```bash
+PORT=8080 RESOLUTION=1600x900 make up
+```
+
+The default port binds only to `127.0.0.1`. Do not change `BIND_ADDRESS`
+unless the no-password environment is intentionally being exposed.
+
+Useful development and lifecycle commands:
+
+```bash
+make check
+make build
+make run
+make recreate
+make test
+make logs
+make status
+make size-report
+make stop
+```
+
+## What Ghost is
 
 OpenClaw and Hermes have made the always-on agent easy to understand: give an
 agent a persistent computer, keep it running, and reach it from chat whenever
@@ -36,108 +122,61 @@ harness at all.
 
 Ghost also demonstrates **one subscription, whole team**. Authenticate Codex or
 Claude Code once inside Ghost, and everyone reaches that single install from
-the chat client they already have open - no per-person license, no local setup,
-and nobody else needing a terminal. Pantalk keys sessions by user, channel, and
-thread, so each teammate still gets an isolated conversation.
+the chat client they already have open - no per-person local setup and nobody
+else needing a terminal. Pantalk keys sessions by user, channel, and thread, so
+each teammate still gets an isolated conversation.
 
-Note that the desktop itself is a single-tenant, trusted-host environment (see
-[Security posture](#harness-authentication)) - what the team shares is the
-harness _through chat_, not the desktop. Run Ghost somewhere you control and
-let Pantalk be the front door.
+The desktop itself remains a single-tenant, trusted-host environment. What the
+team shares is the harness _through chat_, not the desktop. Run Ghost somewhere
+you control, keep its desktop private, and let Pantalk be the front door. See
+[Harness authentication](#harness-authentication) for the security model.
 
-Underneath, it is a deliberately small fork of the original CBK sandbox desktop:
-the same Openbox environment, Tint2 panel, Triste-Crimson theme, Kitty
-terminal, and on-demand Cortile tiling, with Pantalk's own branded wallpaper.
+## Technical model
 
-The image includes:
-
-- CBK branding is replaced with Pantalk Ghost.
-- VS Code is not installed or shown in the application menu.
-- `pantalk` and `pantalkd` are installed from the pinned Pantalk release.
-- Codex, Claude Code, and Kimi Code are installed as available harnesses;
-  Pantalk can also drive Goose and other command or ACP harnesses.
-- Codex and Claude Code are registered as agents in the starter Pantalk config,
-  so both harnesses are one config line away from any bot.
-- Docker persistence is included for Pantalk, agent authentication, and the
-  workspace.
-- Messaging systems are added through deployment recipes rather than bundled
-  into the Ghost image - the image stays transport-neutral on purpose, because
-  the point is that the platform is interchangeable.
-- A Makefile provides the local build, run, and test workflow.
-
-## Run locally
-
-Build and start Ghost:
-
-```bash
-make up
+```text
+Mattermost, Slack, Discord, IRC, SMS, or another chat system
+                              |
+                              v
+                    Pantalk deployment
+                connector + routing + sessions
+                              |
+                              v
+                     Pantalk Ghost
+        persistent workspace + credentials + Linux desktop
+                              |
+                              v
+          Codex, Claude Code, Kimi Code, Goose, or another
+                   command/ACP agentic harness
 ```
 
-Open <http://127.0.0.1:6902>. The browser is only a KasmVNC client for the
-Linux environment; there is no separate dashboard.
+Messaging servers stay outside the image. A deployment supplies the connector
+configuration, while the same Ghost image and harness definitions work across
+providers. Pantalk maintains chat-side routing and session isolation; the
+selected harness continues to own reasoning, tools, permissions, model access,
+and execution.
 
-Other useful commands:
+Underneath, Ghost is a deliberately small fork of the original CBK sandbox
+desktop: an Openbox environment, Tint2 panel, Triste-Crimson theme, Kitty
+terminal, and on-demand Cortile tiling. The browser UI is a KasmVNC view of that
+real Linux desktop, which lets both the operator and the harness use the same
+browser, terminal, filesystem, and display.
 
-```bash
-make build
-make check
-make run
-make recreate
-make test
-make logs
-make status
-make size-report
-make stop
-```
+### What the image includes
 
-To select another port or initial resolution:
+- `pantalk` and `pantalkd` from the pinned Pantalk release;
+- Codex, Claude Code, and Kimi Code as installed harnesses;
+- starter Codex and Claude Code agent definitions, with Kimi Code ready to
+  attach through ACP;
+- support for Goose and other command or ACP harnesses once installed;
+- Chrome, Kitty, Git, GitHub CLI, Docker CLI, Python, Node.js, pnpm, Ranger,
+  htop, and common development tools;
+- persistent paths for Pantalk state, harness authentication, and `/workspace`;
+- the Openbox, Tint2, KasmVNC, and Cortile browser-desktop stack; and
+- a Makefile for local build, lifecycle, validation, and size-report workflows.
 
-```bash
-PORT=8080 RESOLUTION=1600x900 make up
-```
-
-The default port binds only to `127.0.0.1`. Do not change `BIND_ADDRESS`
-unless the no-password environment is intentionally being exposed.
-
-## Run the published image
-
-Official releases are published to GitHub Container Registry:
-
-```bash
-docker pull ghcr.io/pantalk/ghost:latest
-docker run --detach \
-  --name pantalk-ghost \
-  --platform linux/amd64 \
-  --shm-size 1g \
-  --publish 127.0.0.1:6902:6901 \
-  ghcr.io/pantalk/ghost:latest
-```
-
-Open <http://127.0.0.1:6902>. This short command is for trying Ghost: the
-image-declared state directories become anonymous volumes. Replacing the
-container loses the association with those volumes and leaves them behind on
-disk.
-
-For a long-lived Ghost, use the Makefile or name every persistent volume:
-
-```bash
-docker run --detach \
-  --name pantalk-ghost \
-  --platform linux/amd64 \
-  --restart unless-stopped \
-  --shm-size 1g \
-  --publish 127.0.0.1:6902:6901 \
-  --volume pantalk-ghost-workspace:/workspace \
-  --volume pantalk-ghost-config:/home/ghost/.config/pantalk \
-  --volume pantalk-ghost-state:/home/ghost/.local/share/pantalk \
-  --volume pantalk-ghost-codex:/home/ghost/.codex \
-  --volume pantalk-ghost-claude:/home/ghost/.claude \
-  --volume pantalk-ghost-kimi:/home/ghost/.kimi \
-  ghcr.io/pantalk/ghost:latest
-```
-
-Pantalk configuration and history, runtime credentials, and workspace files
-then survive container recreation and image upgrades.
+VS Code and messaging servers are deliberately absent. Messaging systems are
+composed around the unmodified image through deployment recipes, keeping Ghost
+transport-neutral.
 
 ## Deployments
 
