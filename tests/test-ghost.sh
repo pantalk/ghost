@@ -105,6 +105,16 @@ for control in minimize maximize restore close; do
 done
 grep -Fq '"system_theme": 1' \
     "$project_dir/Dockerfile"
+grep -Fq 'for config_dir in google-chrome chromium' \
+    "$project_dir/Dockerfile"
+grep -Fq '/etc/chromium/policies/managed/ghost-policy.json' \
+    "$project_dir/Dockerfile"
+grep -Fq 'browser=/opt/google/chrome/google-chrome' \
+    "$project_dir/shell/chromium"
+grep -Fq 'browser=/usr/bin/chromium' \
+    "$project_dir/shell/chromium"
+grep -Fq 'exec "$browser"' \
+    "$project_dir/shell/chromium"
 grep -Fq 'popover.background.menu' \
     "$project_dir/gtk/PantalkGhost/gtk-3.0/gtk.css"
 grep -Fq 'background-color: #020303;' \
@@ -135,6 +145,55 @@ if grep -Fq -- '--pack-extension=' "$project_dir/Dockerfile"; then
     echo "The obsolete Chrome extension theme is still packaged." >&2
     exit 1
 fi
+
+# Every downloaded binary and desktop dependency must resolve for both release
+# architectures. In particular, Chrome remains AMD64-only while signed Debian
+# Chromium supplies the equivalent browser on ARM64.
+grep -Fq 'amd64|arm64)' "$project_dir/Dockerfile"
+grep -Fq 'yq_linux_${arch}' "$project_dir/Dockerfile"
+grep -Fq 'kasmvncserver_noble_${KASMVNC_VERSION}_${arch}.deb' \
+    "$project_dir/Dockerfile"
+grep -Fq 'google-chrome-stable_current_amd64.deb' \
+    "$project_dir/Dockerfile"
+grep -Fq "'deb [arch=arm64 signed-by=/etc/apt/keyrings/debian-archive-key-12.asc] https://deb.debian.org/debian bookworm main'" \
+    "$project_dir/Dockerfile"
+grep -Fq 'apt-get install -y --no-install-recommends chromium' \
+    "$project_dir/Dockerfile"
+if grep -Fq 'Pantalk Ghost currently supports linux/amd64 only' \
+    "$project_dir/Dockerfile"; then
+    echo "The Dockerfile still rejects ARM64 builds." >&2
+    exit 1
+fi
+grep -Fq 'TARGETARCH ?= $(word 2,$(subst /, ,$(PLATFORM)))' \
+    "$project_dir/Makefile"
+grep -Fq -- '--build-arg "TARGETARCH=$(TARGETARCH)"' \
+    "$project_dir/Makefile"
+grep -Fq 'PLATFORM ?= linux/$(NATIVE_ARCH)' \
+    "$project_dir/Makefile"
+
+ci_workflow="$project_dir/.github/workflows/ci.yaml"
+release_workflow="$project_dir/.github/workflows/release.yaml"
+for workflow in "$ci_workflow" "$release_workflow"; do
+    grep -Fq 'platform: linux/amd64' "$workflow"
+    grep -Fq 'platform: linux/arm64' "$workflow"
+    grep -Fq 'runner: ubuntu-24.04-arm' "$workflow"
+done
+grep -Fq 'bash tests/smoke-container.sh "$container" "$ARCH"' \
+    "$ci_workflow"
+grep -Fq 'push-by-digest=true' "$release_workflow"
+grep -Fq 'merge-multiple: true' "$release_workflow"
+grep -Fq 'docker buildx imagetools create' "$release_workflow"
+
+for deployment in ergo mattermost; do
+    compose="$project_dir/deployments/$deployment/compose.yaml"
+    compose_dev="$project_dir/deployments/$deployment/compose.dev.yaml"
+    if grep -Fq 'platform:' "$compose" ||
+        grep -Fq 'TARGETARCH:' "$compose_dev"; then
+        echo "$deployment still forces Ghost to AMD64." >&2
+        exit 1
+    fi
+    grep -Fq 'PANTALK_VERSION: ${PANTALK_VERSION:-0.0.12}' "$compose_dev"
+done
 grep -Fq "local neon_green='\\[\\e[38;5;46m\\]'" \
     "$project_dir/shell/bashrc"
 grep -Fq 'PS1="${neon_green}@\\u ' "$project_dir/shell/bashrc"

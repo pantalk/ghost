@@ -4,13 +4,11 @@
 
 ## Quick start
 
-You need Docker on an `amd64` host, or a Docker installation capable of
-running `linux/amd64` images. Start the published image:
+You need Docker on an AMD64 or ARM64 host. Start the published image:
 
 ```bash
 docker run --detach \
   --name pantalk-ghost \
-  --platform linux/amd64 \
   --shm-size 1g \
   --publish 127.0.0.1:6902:6901 \
   ghcr.io/pantalk/ghost:latest
@@ -37,7 +35,6 @@ For a long-lived Ghost, add a restart policy and name every persistent volume:
 ```bash
 docker run --detach \
   --name pantalk-ghost \
-  --platform linux/amd64 \
   --restart unless-stopped \
   --shm-size 1g \
   --publish 127.0.0.1:6902:6901 \
@@ -64,6 +61,10 @@ From this directory, build and start the local image:
 ```bash
 make up
 ```
+
+The Makefile selects `linux/amd64` or `linux/arm64` from the host. Override it
+explicitly with `PLATFORM=linux/arm64 make up` when building for another
+architecture.
 
 Open <http://127.0.0.1:6902>. To select another port or initial resolution:
 
@@ -168,8 +169,9 @@ browser, terminal, filesystem, and display.
 - starter Codex and Claude Code agent definitions, with Kimi Code ready to
   attach through ACP;
 - support for Goose and other command or ACP harnesses once installed;
-- Chrome, Kitty, Git, GitHub CLI, Docker CLI, Python, Node.js, pnpm, Ranger,
-  htop, and common development tools;
+- Google Chrome on AMD64 or Chromium on ARM64, plus Kitty, Git, GitHub CLI,
+  Docker CLI, Python, Node.js, pnpm, Ranger, htop, and common development
+  tools;
 - persistent paths for Pantalk state, harness authentication, and `/workspace`;
 - the Openbox, Tint2, KasmVNC, and Cortile browser-desktop stack; and
 - a Makefile for local build, lifecycle, validation, and size-report workflows.
@@ -310,9 +312,9 @@ enable performance statistics to see CPU, network, and FPS.
 Run `make size-report` after a build to measure how much of the image belongs
 to the graphical package closure and to list its largest layers. The desktop
 remains because it makes the environment inspectable, supports runtime login,
-and supplies Chrome, screen capture, and input control for computer-use
-workflows. See [IMAGE-SIZE.md](IMAGE-SIZE.md) for the rationale and trimming
-details.
+and supplies a Chromium-family browser, screen capture, and input control for
+computer-use workflows. See [IMAGE-SIZE.md](IMAGE-SIZE.md) for the rationale
+and trimming details.
 
 ## Environment
 
@@ -321,7 +323,7 @@ Right-click the background to open the original application menu:
 - Terminal
 - Ranger file manager
 - htop task manager
-- Chrome
+- Browser (Google Chrome on AMD64, Chromium on ARM64)
 - Setup, with guided Codex, Claude Code, and Kimi Code login actions
 - Pantalk daemon and KasmVNC logs
 - Cortile tiling controls
@@ -350,7 +352,7 @@ same source does not silently install a different agent runtime:
 
 | Component      | Version   |
 | -------------- | --------- |
-| Pantalk        | `0.0.11`  |
+| Pantalk        | `0.0.12`  |
 | agent-browser  | `0.33.0`  |
 | GitHub Copilot | `1.0.75`  |
 | Codex          | `0.145.0` |

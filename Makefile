@@ -4,7 +4,11 @@ SHELL := /bin/bash
 DOCKER ?= docker
 IMAGE ?= pantalk/ghost:local
 CONTAINER ?= pantalk-ghost
-PLATFORM ?= linux/amd64
+NATIVE_ARCH := $(shell uname -m | sed \
+	-e 's/^x86_64$$/amd64/' \
+	-e 's/^aarch64$$/arm64/')
+PLATFORM ?= linux/$(NATIVE_ARCH)
+TARGETARCH ?= $(word 2,$(subst /, ,$(PLATFORM)))
 PANTALK_VERSION ?= 0.0.12
 AGENT_BROWSER_VERSION ?= 0.33.0
 GITHUB_COPILOT_VERSION ?= 1.0.75
@@ -44,6 +48,7 @@ help:
 	@echo "  make size-report  Report the graphical stack's share of the image"
 	@echo
 	@echo "Overrides: PORT=8080 RESOLUTION=1600x900 PANTALK_VERSION=0.0.12"
+	@echo "           PLATFORM=linux/arm64 (default: $(PLATFORM))"
 	@echo "           PANTALK_AUTOSTART=false"
 	@echo "           VNC_STATS=true  (log KasmVNC encoder statistics)"
 
@@ -53,6 +58,7 @@ check:
 		shell/ghost-panel-status shell/ghost-harness \
 		shell/chromium shell/welcome \
 		tests/test-agent-runtime-login.sh tests/test-ghost.sh \
+		tests/smoke-container.sh \
 		tools/size-report.sh
 	bash tests/test-agent-runtime-login.sh
 	bash tests/test-ghost.sh
@@ -68,7 +74,7 @@ check:
 build:
 	$(DOCKER) build \
 		--platform "$(PLATFORM)" \
-		--build-arg TARGETARCH=amd64 \
+		--build-arg "TARGETARCH=$(TARGETARCH)" \
 		--build-arg "PANTALK_VERSION=$(PANTALK_VERSION)" \
 		--build-arg "AGENT_BROWSER_VERSION=$(AGENT_BROWSER_VERSION)" \
 		--build-arg "GITHUB_COPILOT_VERSION=$(GITHUB_COPILOT_VERSION)" \
@@ -130,19 +136,8 @@ smoke:
 		$(DOCKER) logs --tail 50 "$(CONTAINER)" || true; \
 		exit 1; \
 	fi; \
-	if $(DOCKER) exec "$(CONTAINER)" sh -c \
-		'command -v ergo || command -v halloy || command -v halloy-node' \
-		>/dev/null 2>&1; then \
-		echo "Ghost still contains bundled IRC software."; \
-		exit 1; \
-	fi; \
-	$(DOCKER) exec "$(CONTAINER)" bash -ec '\
-		for command in agent-runtime-login ghost-panel-status ghost-harness \
-			pantalk pantalkd \
-			agent-browser copilot cbk codex claude kimi chromium; do \
-			command -v "$$command" >/dev/null; \
-		done; \
-		curl -fsS http://127.0.0.1:6901/ >/dev/null'; \
+	DOCKER="$(DOCKER)" bash tests/smoke-container.sh \
+		"$(CONTAINER)" "$(TARGETARCH)"; \
 	echo "Pantalk Ghost is ready and transport-neutral: http://$(BIND_ADDRESS):$(PORT)"
 
 stop:

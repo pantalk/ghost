@@ -7,5 +7,4 @@ services:
       dockerfile: Dockerfile
       target: ghost
       args:
-        TARGETARCH: amd64
-        PANTALK_VERSION: ${PANTALK_VERSION:-0.0.11}
+        PANTALK_VERSION: ${PANTALK_VERSION:-0.0.12}
