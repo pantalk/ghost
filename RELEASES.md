@@ -28,8 +28,10 @@ Stable releases publish the following tags:
 
 Prereleases publish the versioned tags but do not move `latest`.
 
-The current image targets `linux/amd64`. Additional architectures can be added
-after the desktop dependencies and release build are validated on them.
+Each tag is a multi-architecture image supporting `linux/amd64` and
+`linux/arm64`. Docker selects the matching image automatically. CI builds and
+smoke-tests each architecture on a native GitHub-hosted runner before the
+release workflow combines their digests into one manifest.
 
 ## Package visibility
 

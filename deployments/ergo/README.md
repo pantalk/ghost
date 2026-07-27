@@ -21,7 +21,7 @@ agent conversations.
 - Docker Engine
 - Docker Compose as the `docker compose` plugin
 - Bash and curl
-- An amd64 host or Docker support for amd64 emulation
+- An AMD64 or ARM64 host with Docker
 
 ## Start with the published Ghost image
 

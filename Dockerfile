@@ -26,8 +26,11 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN test "${TARGETARCH:-amd64}" = "amd64" || \
-    { echo "Pantalk Ghost currently supports linux/amd64 only" >&2; exit 1; }
+RUN arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
+    case "$arch" in \
+        amd64|arm64) ;; \
+        *) echo "Pantalk Ghost does not support linux/$arch" >&2; exit 1 ;; \
+    esac
 
 # Core tools and runtimes (aligned with shell rootfs capabilities).
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -54,7 +57,8 @@ RUN corepack enable && corepack prepare pnpm@10.13.1 --activate && \
 
 # Mike Farah yq.
 ARG YQ_VERSION=4.44.6
-RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
+RUN arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
+    curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${arch}" \
         -o /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq && \
     yq --version
@@ -123,7 +127,8 @@ RUN set -eux; \
 
 # KasmVNC.
 ARG KASMVNC_VERSION=1.4.0
-RUN curl -fsSL "https://github.com/kasmtech/KasmVNC/releases/download/v${KASMVNC_VERSION}/kasmvncserver_noble_${KASMVNC_VERSION}_amd64.deb" \
+RUN arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
+    curl -fsSL "https://github.com/kasmtech/KasmVNC/releases/download/v${KASMVNC_VERSION}/kasmvncserver_noble_${KASMVNC_VERSION}_${arch}.deb" \
         -o /tmp/kasmvnc.deb && \
     apt-get update && \
     apt-get install -y --no-install-recommends /tmp/kasmvnc.deb && \
@@ -197,13 +202,37 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     apt-get update && apt-get install -y --no-install-recommends gh && \
     rm -rf /var/lib/apt/lists/*
 
-# Google Chrome.
-RUN curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-        -o /tmp/chrome.deb && \
-    apt-get update && apt-get install -y --no-install-recommends /tmp/chrome.deb && \
-    rm -f /tmp/chrome.deb && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -f /usr/local/bin/chromium
+# Google does not publish Chrome for Linux ARM64. Keep the existing Chrome
+# package on AMD64 and use Debian's signed Chromium package on ARM64, following
+# the same approach as Kasm's own multi-architecture Ubuntu Chromium image.
+RUN set -eux; \
+    arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
+    if [ "$arch" = "amd64" ]; then \
+        curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+            -o /tmp/browser.deb; \
+        apt-get update; \
+        apt-get install -y --no-install-recommends /tmp/browser.deb; \
+        rm -f /tmp/browser.deb; \
+    else \
+        mkdir -p /etc/apt/keyrings; \
+        curl -fsSL https://ftp-master.debian.org/keys/archive-key-12.asc \
+            -o /etc/apt/keyrings/debian-archive-key-12.asc; \
+        printf '%s\n' \
+            'deb [arch=arm64 signed-by=/etc/apt/keyrings/debian-archive-key-12.asc] https://deb.debian.org/debian bookworm main' \
+            > /etc/apt/sources.list.d/debian-bookworm.list; \
+        printf '%s\n' \
+            'Package: *' \
+            'Pin: release n=bookworm' \
+            'Pin-Priority: 100' \
+            > /etc/apt/preferences.d/debian-bookworm; \
+        apt-get update; \
+        apt-get install -y --no-install-recommends chromium; \
+        rm -f \
+            /etc/apt/keyrings/debian-archive-key-12.asc \
+            /etc/apt/preferences.d/debian-bookworm \
+            /etc/apt/sources.list.d/debian-bookworm.list; \
+    fi; \
+    rm -rf /var/lib/apt/lists/*
 
 # ═══════════════════════════════════════════════════════════════════
 # Stage: system - configuration/runtime layer over base-plus.
@@ -240,11 +269,12 @@ RUN if id -u ghost >/dev/null 2>&1; then \
 
 ENV HOME=/home/ghost
 ENV GTK_THEME=PantalkGhost
-# Chrome asks GTK for embedded symbolic window-control resources. Overlay only
-# those four resources so its custom frame uses the exact Openbox glyph masks.
+# Chrome and Chromium ask GTK for embedded symbolic window-control resources.
+# Overlay only those four resources so their custom frames use the exact
+# Openbox glyph masks.
 ENV G_RESOURCE_OVERLAYS=/org/gtk/libgtk=/usr/share/pantalk-ghost/gtk-overlay
 
-# Chrome's popup menus come from Linux's native color pipeline rather than
+# Browser popup menus come from Linux's native color pipeline rather than
 # extension-theme colors. A GTK system theme therefore styles the menus,
 # dialogs, toolbar, tabs, and omnibox as one coherent near-black surface.
 COPY gtk/PantalkGhost /usr/share/themes/PantalkGhost
@@ -262,29 +292,42 @@ RUN mkdir -p /etc/sudoers.d /home/ghost && \
     touch /home/ghost/.sudo_as_admin_successful /home/ghost/.hushlogin && \
     chown ghost:ghost /home/ghost/.sudo_as_admin_successful /home/ghost/.hushlogin
 
-# Chrome preferences. `system_theme: 1` selects GTK on Linux; unlike a Chrome
+# Browser preferences. `system_theme: 1` selects GTK on Linux; unlike an
 # extension theme, it also reaches native menus and other popup surfaces.
-RUN mkdir -p /home/ghost/.config/google-chrome/Default && \
-    printf '{\n  "browser": {\n    "has_seen_welcome_page": true,\n    "check_default_browser": false\n  },\n  "bookmark_bar": { "show_on_all_tabs": false },\n  "distribution": {\n    "skip_first_run_ui": true,\n    "show_welcome_page": false,\n    "import_bookmarks": false,\n    "make_chrome_default_for_user": false,\n    "suppress_first_run_default_browser_prompt": true\n  },\n  "extensions": {\n    "theme": {\n      "system_theme": 1\n    }\n  }\n}' \
-    > /home/ghost/.config/google-chrome/Default/Preferences && \
-    touch /home/ghost/.config/google-chrome/"First Run" && \
-    chown -R ghost:ghost /home/ghost/.config/google-chrome
+RUN for config_dir in google-chrome chromium; do \
+        mkdir -p "/home/ghost/.config/$config_dir/Default"; \
+        printf '{\n  "browser": {\n    "has_seen_welcome_page": true,\n    "check_default_browser": false\n  },\n  "bookmark_bar": { "show_on_all_tabs": false },\n  "distribution": {\n    "skip_first_run_ui": true,\n    "show_welcome_page": false,\n    "import_bookmarks": false,\n    "make_chrome_default_for_user": false,\n    "suppress_first_run_default_browser_prompt": true\n  },\n  "extensions": {\n    "theme": {\n      "system_theme": 1\n    }\n  }\n}' \
+            > "/home/ghost/.config/$config_dir/Default/Preferences"; \
+        touch "/home/ghost/.config/$config_dir/First Run"; \
+    done && \
+    chown -R ghost:ghost \
+        /home/ghost/.config/google-chrome \
+        /home/ghost/.config/chromium
 
 # Suppress the default-browser prompt via managed policy. Do not set
-# BrowserThemeColor here: that policy overrides Chrome's GTK system theme.
-RUN mkdir -p /etc/opt/chrome/policies/managed && \
+# BrowserThemeColor here: that policy overrides the GTK system theme.
+RUN mkdir -p \
+        /etc/opt/chrome/policies/managed \
+        /etc/chromium/policies/managed && \
     printf '{\n  "DefaultBrowserSettingEnabled": false,\n  "BrowserSignin": 0,\n  "HomepageLocation": "file:///opt/browser/index.html",\n  "HomepageIsNewTabPage": false,\n  "ShowHomeButton": true,\n  "RestoreOnStartup": 4,\n  "RestoreOnStartupURLs": [\n    "file:///opt/browser/index.html"\n  ]\n}' \
-    > /etc/opt/chrome/policies/managed/chrome-policy.json
+        > /etc/opt/chrome/policies/managed/ghost-policy.json && \
+    cp /etc/opt/chrome/policies/managed/ghost-policy.json \
+        /etc/chromium/policies/managed/ghost-policy.json
 
-# Register Chrome as the default browser (system-level alternatives).
+# Register the architecture's browser as the system default.
 RUN mkdir -p /home/ghost/.local/share/applications && \
     chown -R ghost:ghost /home/ghost/.local && \
-    update-alternatives --install /usr/bin/x-www-browser x-www-browser /opt/google/chrome/google-chrome 200 2>/dev/null || true && \
-    update-alternatives --set x-www-browser /opt/google/chrome/google-chrome 2>/dev/null || true
+    if [ -x /opt/google/chrome/google-chrome ]; then \
+        browser=/opt/google/chrome/google-chrome; \
+    else \
+        browser=/usr/bin/chromium; \
+    fi && \
+    update-alternatives --install /usr/bin/x-www-browser x-www-browser "$browser" 200 2>/dev/null || true && \
+    update-alternatives --set x-www-browser "$browser" 2>/dev/null || true
 
 # @note MIME associations and xdg defaults are configured in init.sh at
 # runtime so they work in both Docker local and rootfs deployments.
-# The Chrome wrapper lives in shell/ and is copied below.
+# The browser wrapper lives in shell/ and is copied below.
 ENV BROWSER=chromium
 
 # Openbox config - dark minimal theme with tint2 panel.

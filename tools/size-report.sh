@@ -34,7 +34,7 @@ echo "--------------"
 echo
 
 GRAPHICAL_TOPLEVEL="
-google-chrome-stable kasmvncserver
+google-chrome-stable chromium chromium-common kasmvncserver
 xterm dbus-x11 x11-utils x11-xserver-utils xorg
 scrot openbox obconf tint2 kitty ranger feh picom xdotool wmctrl
 fonts-noto fonts-noto-color-emoji xfonts-base
@@ -66,7 +66,7 @@ echo "-------------------------"
 awk 'NR==FNR {want[$1]=1; next}
      want[$1] {
        p=$1; s=$2
-       if (p ~ /^google-chrome/)                       c="Chrome browser"
+       if (p ~ /^(google-chrome|chromium)/)            c="Chromium-family browser"
        else if (p == "kasmvncserver" || p ~ /perl/)    c="KasmVNC and its perl deps"
        else if (p ~ /^(fonts-|xfonts-|.*-icon-theme|ubuntu-mono|yudit|poppler-data)/) c="Fonts and icon themes"
        else if (p ~ /llvm|mesa|^libgl|^libegl|^libvulkan|drm|gallium/) c="Mesa and LLVM software GL"

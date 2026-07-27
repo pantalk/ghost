@@ -6,6 +6,21 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-07-27
+
+### Added
+
+- Publish one multi-architecture Ghost image for `linux/amd64` and
+  `linux/arm64`, with native build and desktop smoke tests for both
+  architectures before their digests are combined into a release manifest.
+
+### Changed
+
+- Keep Google Chrome on AMD64 and use signed Debian Chromium on ARM64 behind
+  the same launcher, GTK theme, managed policy, and desktop integration.
+- Let local builds and the Ergo and Mattermost deployments select the host
+  architecture automatically instead of forcing `linux/amd64`.
+
 ## [0.0.7] - 2026-07-27
 
 ### Added
