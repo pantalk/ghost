@@ -8,6 +8,10 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ### Added
 
+- Add an image-owned `workspace/` seed with a default `AGENT.md`. Container
+  startup copies missing seed files into the persistent `/workspace` volume
+  without replacing user files, so defaults reach both new and existing
+  workspaces.
 - Add a guided runtime authentication helper for Codex device, browser, and
   API-key login; Claude subscription, Console, setup-token, and SSO login; and
   Kimi Code's interactive `/login` flow.

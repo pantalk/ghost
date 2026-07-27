@@ -1,21 +1,38 @@
 # Pantalk Ghost
 
-<img width="3456" height="2234" alt="tpsmlhvh-6902 euw devtunnels ms_(MacBook Pro 16_)" src="https://github.com/user-attachments/assets/8dafdf9a-9f69-4961-8566-304a6b2371a7" />
+<img width="2560" height="1440" alt="Pantalk Ghost running as a persistent Linux agent computer in a browser" src="https://github.com/user-attachments/assets/e6d199ee-9a8e-49a6-a8a6-a9ff320bd490" />
 
-**Ghost is the showcase for how easy this is.**
+**An always-on agent computer for the harnesses you already use.**
 
-[Pantalk](https://github.com/pantalk/pantalk) puts the coding agent you already
-run into the chat apps your team already uses - any agent, any chat - without
-welding the two together. The agent never learns which chat app it is talking
-to, and the chat app never learns which agent is answering. Ghost is that
-claim, assembled and running, so you can see it instead of reading about it.
+OpenClaw and Hermes have made the always-on agent easy to understand: give an
+agent a persistent computer, keep it running, and reach it from chat whenever
+work needs doing. Ghost belongs in that category, but makes a different
+architectural choice. **Ghost is not another agent runtime.** It turns the
+agentic harnesses you already trust - Codex, Claude Code, Goose, Kimi Code, or
+another Pantalk-compatible harness - into the agent.
 
-It is a browser-accessible Linux desktop with Pantalk, Codex, Claude Code, and
-Kimi Code installed. Codex and Claude Code are already registered as agents in
-the starter config; Kimi Code is ready to add through Pantalk's ACP driver.
-Boot it, log into a harness, bring up a deployment, and a real chat server has a
-real agent in it a few minutes later. Changing which harness answers is one
-`driver:` line.
+The split is deliberate:
+
+- **Ghost provides the computer:** a persistent Linux workspace, browser
+  desktop, terminal, saved harness credentials, Pantalk daemon, and a stable
+  place to run continuously.
+- **Your harness provides the agent:** its reasoning loop, model access, tools,
+  skills, approval policy, configuration, and the behavior you already know.
+- **Pantalk provides the reach:** it connects that harness to Mattermost,
+  Slack, Discord, IRC, SMS, and other chat systems without teaching the
+  harness about any of them.
+
+The current image includes Pantalk, Codex, Claude Code, and Kimi Code. Codex and
+Claude Code are already registered in the starter config; Kimi Code is ready to
+attach through Pantalk's ACP driver. Goose and other command or ACP harnesses
+fit the same model once installed. Ghost does not ask you to abandon a mature
+harness for a thinner built-in agent just to gain persistence and chat access.
+
+Boot the computer, authenticate the harness you already use, and connect a
+deployment. A few minutes later that harness is working from a real chat
+server, with a durable workspace and its normal tools. Changing which harness
+answers is one `driver:` line; changing the chat system does not change the
+harness at all.
 
 Ghost also demonstrates **one subscription, whole team**. Authenticate Codex or
 Claude Code once inside Ghost, and everyone reaches that single install from
@@ -32,12 +49,13 @@ Underneath, it is a deliberately small fork of the original CBK sandbox desktop:
 the same Openbox environment, Tint2 panel, Triste-Crimson theme, Kitty
 terminal, and on-demand Cortile tiling, with Pantalk's own branded wallpaper.
 
-Ghost includes:
+The image includes:
 
 - CBK branding is replaced with Pantalk Ghost.
 - VS Code is not installed or shown in the application menu.
 - `pantalk` and `pantalkd` are installed from the pinned Pantalk release.
-- Codex, Claude Code, and Kimi Code are installed as available harnesses.
+- Codex, Claude Code, and Kimi Code are installed as available harnesses;
+  Pantalk can also drive Goose and other command or ACP harnesses.
 - Codex and Claude Code are registered as agents in the starter Pantalk config,
   so both harnesses are one config line away from any bot.
 - Docker persistence is included for Pantalk, agent authentication, and the
@@ -291,15 +309,15 @@ desktop underneath.
 Ghost pins the tools that are downloaded during a build so rebuilding the
 same source does not silently install a different agent runtime:
 
-| Component        | Version   |
-| ---------------- | --------- |
-| Pantalk          | `0.0.11`  |
-| agent-browser    | `0.33.0`  |
-| GitHub Copilot   | `1.0.75`  |
-| Codex            | `0.145.0` |
-| ChatBotKit CLI   | `1.38.0`  |
-| Kimi Code        | `0.29.1`  |
-| Claude Code      | `2.1.220` |
+| Component      | Version   |
+| -------------- | --------- |
+| Pantalk        | `0.0.11`  |
+| agent-browser  | `0.33.0`  |
+| GitHub Copilot | `1.0.75`  |
+| Codex          | `0.145.0` |
+| ChatBotKit CLI | `1.38.0`  |
+| Kimi Code      | `0.29.1`  |
+| Claude Code    | `2.1.220` |
 
 `make check` verifies that the Makefile and Dockerfile pins stay synchronized.
 
