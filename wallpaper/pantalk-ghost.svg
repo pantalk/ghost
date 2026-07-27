@@ -1,0 +1,33 @@
+<svg
+  width="2560"
+  height="1440"
+  viewBox="0 0 2560 1440"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <pattern
+      id="grid"
+      width="60"
+      height="60"
+      patternUnits="userSpaceOnUse"
+    >
+      <path d="M60 0H0V60" stroke="#293039" stroke-opacity="0.3" />
+    </pattern>
+    <radialGradient
+      id="hero-glow"
+      cx="0"
+      cy="0"
+      r="1"
+      gradientUnits="userSpaceOnUse"
+      gradientTransform="translate(1280 -120) rotate(90) scale(780 1280)"
+    >
+      <stop stop-color="#24DBC9" stop-opacity="0.15" />
+      <stop offset="1" stop-color="#24DBC9" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="2560" height="1440" fill="#080A0C" />
+  <rect width="2560" height="1440" fill="url(#hero-glow)" />
+  <rect width="2560" height="1440" fill="url(#grid)" />
+</svg>

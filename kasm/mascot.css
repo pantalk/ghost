@@ -1,0 +1,95 @@
+/* Pantalk mascot - the ghost figure overlaid on the KasmVNC client page.
+ *
+ * The mascot is a sibling of the noVNC canvas rather than something running on
+ * the remote desktop, so it costs the container nothing: no X client, no
+ * window for Openbox to manage, and no pixels for KasmVNC to encode and ship.
+ * It is drawn by the viewer's own browser and the framebuffer underneath stays
+ * as idle as it would be without it.
+ *
+ * The palette and treatment come from the Pantalk site: an unframed logo over
+ * a soft accent glow, as on the about page hero (site/pages/about.jsx), and
+ * the gentle rise-and-fall of .platform-float (site/styles/global.css).  Keep
+ * the two in sync when either changes.
+ */
+
+#pantalk_mascot {
+  /* Same tokens as the site's :root, in the same channel-list form so the
+     hsl(... / <alpha>) opacities below match Tailwind's bg-accent/20 etc. */
+  --accent: 174 72% 50%;
+  --accent-secondary: 174 72% 60%;
+
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 100;
+
+  /* Clicking the ghost opens the selected harness, so this element - and only
+     this element - accepts pointer events.  The glow opts back out below, so
+     the area taken away from the remote desktop is exactly the 64px ghost and
+     not the much wider blur around it. */
+  pointer-events: auto;
+  cursor: pointer;
+
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+#pantalk_mascot.is-ready {
+  opacity: 1;
+}
+
+/* Site: bg-accent/20 blur-3xl rounded-full scale-150, behind an unframed
+   logo.  The glow stays put while the ghost rises off it. */
+#pantalk_mascot .pantalk_mascot_glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: hsl(var(--accent) / 0.2);
+  filter: blur(32px);
+  transform: scale(1.5);
+  transition: background 0.3s ease;
+
+  /* Scaled and blurred well past the ghost: keep it click-through so it does
+     not widen the dead zone over the desktop. */
+  pointer-events: none;
+}
+
+#pantalk_mascot:hover .pantalk_mascot_glow {
+  background: hsl(var(--accent) / 0.3);
+}
+
+#pantalk_mascot .pantalk_mascot_logo {
+  display: block;
+  position: relative;
+  width: 64px;
+  height: 64px;
+  color: hsl(var(--accent));
+  animation: pantalk_mascot_float 3s ease-in-out infinite;
+  transition: color 0.3s ease;
+}
+
+/* Site: the navbar logo brightens to accent-secondary under group-hover. */
+#pantalk_mascot:hover .pantalk_mascot_logo {
+  color: hsl(var(--accent-secondary));
+}
+
+/* Identical to .platform-float on the site: a slow, even rise and fall in
+   place. */
+@keyframes pantalk_mascot_float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pantalk_mascot {
+    transition: none;
+  }
+  #pantalk_mascot .pantalk_mascot_logo {
+    animation: none;
+  }
+}

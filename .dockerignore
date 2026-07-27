@@ -3,3 +3,18 @@
 rootfs.ext4
 pantalk
 pantalkd
+
+# Nothing below is COPYed by the Dockerfile. Excluding it keeps the build
+# context small and prevents documentation, tests, release metadata, or local
+# deployment recipes from invalidating image layers.
+.github
+.gitignore
+CHANGELOG.md
+IMAGE-SIZE.md
+Makefile
+README.md
+RELEASES.md
+VERSION
+deployments
+tests
+tools

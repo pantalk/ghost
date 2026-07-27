@@ -1,8 +1,8 @@
 # Mattermost Deployment
 
 This deployment combines the official Mattermost Team Edition and PostgreSQL
-images with Pantalk Station. Mattermost provides the collaborative chat
-surface. Station runs `pantalkd`, Codex, and Claude in one persistent graphical
+images with Pantalk Ghost. Mattermost provides the collaborative chat
+surface. Ghost runs `pantalkd`, Codex, and Claude in one persistent graphical
 agent environment.
 
 Provisioning creates:
@@ -24,19 +24,19 @@ responding to each other recursively.
 - Bash, curl, and OpenSSL
 - An amd64 host or Docker support for amd64 emulation
 
-## Start with the published Station image
+## Start with the published Ghost image
 
 ```bash
 make up
 ```
 
 The first run generates `.env`, starts Mattermost, provisions the users and
-bots, and then starts Station.
+bots, and then starts Ghost.
 
 Open:
 
 - Mattermost: <http://127.0.0.1:8065>
-- Station: <http://127.0.0.1:6902>
+- Ghost: <http://127.0.0.1:6902>
 
 Show the generated Mattermost administrator login:
 
@@ -44,21 +44,21 @@ Show the generated Mattermost administrator login:
 make credentials
 ```
 
-Open **Setup** in the Station desktop to authenticate Codex and Claude. Their
+Open **Setup** in the Ghost desktop to authenticate Codex and Claude. Their
 authentication is kept in persistent Docker volumes. After login, direct
 message `codex` or `claude`, or mention `@codex` or `@claude` in the `agents`
 channel.
 
-## Build Station locally
+## Build Ghost locally
 
-Use the repository Dockerfile instead of the published Station image:
+Use the repository Dockerfile instead of the published Ghost image:
 
 ```bash
 make dev
 ```
 
-`compose.dev.yaml` builds the `station` target with the Station repository root
-as its Docker context. This includes local Station changes. The Dockerfile still
+`compose.dev.yaml` builds the `ghost` target with the Ghost repository root
+as its Docker context. This includes local Ghost changes. The Dockerfile still
 downloads the Pantalk release selected by `PANTALK_VERSION`; it does not compile
 the sibling Pantalk Go source.
 
@@ -100,7 +100,7 @@ directory is mounted read-only so Mattermost's unprivileged user can read the
 password during provisioning.
 
 Edit `.env` to change image versions, bind addresses, ports, initial resource
-names, or the Station resolution. Run `make provision` after changing the
+names, or the Ghost resolution. Run `make provision` after changing the
 Mattermost team or channel.
 
 Stop the deployment without deleting data:
@@ -113,7 +113,7 @@ make down
 
 Both browser ports bind to `127.0.0.1` by default.
 
-Station's KasmVNC desktop has no browser password. Do not expose its port to an
+Ghost's KasmVNC desktop has no browser password. Do not expose its port to an
 untrusted network. The generated agents can write inside `/workspace` without
 interactive approval, so only trusted Mattermost users should be allowed to
 message them.

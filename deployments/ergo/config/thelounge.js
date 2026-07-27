@@ -22,7 +22,7 @@ module.exports = {
     nick: "operator",
     username: "operator",
     realname: "Pantalk Operator",
-    join: process.env.IRC_CHANNEL || "#station",
+    join: process.env.IRC_CHANNEL || "#ghost",
     leaveMessage: "",
   },
   lockNetwork: true,

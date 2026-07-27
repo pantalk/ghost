@@ -21,12 +21,12 @@ compose() {
   docker compose --env-file "$env_file" -f "$compose_file" "$@"
 }
 
-station_pantalk() {
+ghost_pantalk() {
   compose exec \
     -T \
-    --user agent \
+    --user ghost \
     --env XDG_RUNTIME_DIR=/run/user/1000 \
-    station \
+    ghost \
     pantalk "$@"
 }
 
@@ -47,22 +47,22 @@ wait_for_url() {
 
 wait_for_url "The Lounge" \
   "http://127.0.0.1:${THELOUNGE_PORT:-9000}/"
-wait_for_url Station \
-  "http://127.0.0.1:${STATION_PORT:-6902}/index.html"
+wait_for_url Ghost \
+  "http://127.0.0.1:${GHOST_PORT:-6902}/index.html"
 
 for attempt in $(seq 1 60); do
-  if station_pantalk ping >/dev/null 2>&1; then
+  if ghost_pantalk ping >/dev/null 2>&1; then
     break
   fi
   if [ "$attempt" -eq 60 ]; then
-    echo "Pantalk did not become ready inside Station" >&2
-    compose logs --tail 100 station >&2 || true
+    echo "Pantalk did not become ready inside Ghost" >&2
+    compose logs --tail 100 ghost >&2 || true
     exit 1
   fi
   sleep 2
 done
 
-bots="$(station_pantalk bots --json)"
+bots="$(ghost_pantalk bots --json)"
 for bot in codex claude; do
   if ! grep -Fq "\"name\":\"$bot\"" <<< "$bots" &&
     ! grep -Fq "\"name\": \"$bot\"" <<< "$bots"; then
@@ -78,7 +78,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-outbound_marker="pantalk-station-outbound-$(date +%s)-$$"
+outbound_marker="pantalk-ghost-outbound-$(date +%s)-$$"
 (
   {
     printf 'NICK observer\r\n'
@@ -93,7 +93,7 @@ outbound_marker="pantalk-station-outbound-$(date +%s)-$$"
 observer_pid=$!
 
 sleep 3
-station_pantalk send \
+ghost_pantalk send \
   --bot codex \
   --channel "$IRC_CHANNEL" \
   --text "$outbound_marker" >/dev/null
@@ -104,7 +104,7 @@ if ! grep -Fq "$outbound_marker" "$observer_output"; then
   exit 1
 fi
 
-inbound_marker="pantalk-station-inbound-$(date +%s)-$$"
+inbound_marker="pantalk-ghost-inbound-$(date +%s)-$$"
 {
   printf 'NICK sender\r\n'
   printf 'USER sender 0 * :Pantalk Smoke Sender\r\n'
@@ -116,13 +116,13 @@ inbound_marker="pantalk-station-inbound-$(date +%s)-$$"
 
 for attempt in $(seq 1 30); do
   history="$(
-    station_pantalk history \
+    ghost_pantalk history \
       --bot codex \
       --search "$inbound_marker" \
       --json
   )"
   if grep -Fq "$inbound_marker" <<< "$history"; then
-    echo "Ergo, The Lounge, and Station passed the IRC smoke test"
+    echo "Ergo, The Lounge, and Ghost passed the IRC smoke test"
     exit 0
   fi
   sleep 1

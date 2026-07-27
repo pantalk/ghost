@@ -1,16 +1,18 @@
-# Pantalk Station - Ubuntu 24.04 + the original CBK Openbox/KasmVNC desktop.
+# syntax=docker/dockerfile:1.7
+#
+# Pantalk Ghost - Ubuntu 24.04 + the original CBK Openbox/KasmVNC desktop.
 #
 # Build targets:
 #   core        - shared runtime/tooling baseline (agent process support)
 #   base        - core + desktop UI substrate (X11/Openbox/KasmVNC)
 #   base-plus   - desktop software/tooling bundle (without runtime configs)
 #   system      - config/runtime layer on top of base-plus
-#   station     - independently runnable Pantalk Station image (default)
+#   ghost       - independently runnable Pantalk Ghost image (default)
 #
 # Local use:
-#   docker build -t pantalk/station:local .
-#   docker run --rm -d --name pantalk-station --shm-size=1g \
-#     -p 127.0.0.1:6902:6901 pantalk/station:local
+#   docker build -t pantalk/ghost:local .
+#   docker run --rm -d --name pantalk-ghost --shm-size=1g \
+#     -p 127.0.0.1:6902:6901 pantalk/ghost:local
 #   Open http://localhost:6902
 #
 
@@ -21,7 +23,11 @@ FROM ubuntu:24.04 AS core
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
+
+RUN test "${TARGETARCH:-amd64}" = "amd64" || \
+    { echo "Pantalk Ghost currently supports linux/amd64 only" >&2; exit 1; }
 
 # Core tools and runtimes (aligned with shell rootfs capabilities).
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -36,14 +42,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     s3fs fuse \
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js 22 LTS (from NodeSource).
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+# Node.js 24, matching the current agent runtime toolchain.
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/* && \
     node --version && npm --version
 
-# pnpm.
-RUN corepack enable && corepack prepare pnpm@latest --activate && \
+# Keep the package manager stable across image rebuilds.
+RUN corepack enable && corepack prepare pnpm@10.13.1 --activate && \
     pnpm --version
 
 # Mike Farah yq.
@@ -54,7 +60,7 @@ RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}
     yq --version
 
 # Required directories.
-RUN mkdir -p /app /data /outputs /workspace /var/log/station
+RUN mkdir -p /app /data /outputs /workspace /var/log/ghost
 
 # Enable user_allow_other for FUSE mounts so s3fs uid/gid options work.
 RUN echo 'user_allow_other' >> /etc/fuse.conf
@@ -80,11 +86,15 @@ FROM core AS base
 
 USER root
 
-# X11 / display + Openbox desktop stack + fonts + Chrome deps.
+# KasmVNC supplies its own X server (Xvnc), so the `xorg` metapackage is not
+# installed: it would add the hardware X server, drivers, udev, and systemd.
+# The generated xstartup is replaced below, making `x11-xserver-utils`
+# unnecessary too. Keep KasmVNC's direct X authentication, keyboard, and core
+# font dependencies explicit so a future autoremove cannot take them out.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    xdg-utils \
-    ssl-cert \
-    xorg xterm dbus-x11 x11-xserver-utils x11-utils \
+    xdg-utils ssl-cert \
+    xauth xkb-data x11-xkb-utils xfonts-base \
+    xterm dbus-x11 x11-utils \
     scrot \
     openbox obconf tint2 kitty ranger feh picom htop xdotool wmctrl \
     fonts-noto fonts-noto-color-emoji \
@@ -126,7 +136,13 @@ RUN curl -fsSL "https://github.com/kasmtech/KasmVNC/releases/download/v${KASMVNC
 FROM base AS base-plus
 
 ARG TARGETARCH
-ARG PANTALK_VERSION=0.0.11
+ARG PANTALK_VERSION=0.0.12
+ARG AGENT_BROWSER_VERSION=0.33.0
+ARG GITHUB_COPILOT_VERSION=1.0.75
+ARG CODEX_VERSION=0.145.0
+ARG CHATBOTKIT_CLI_VERSION=1.38.0
+ARG KIMI_CODE_VERSION=0.29.1
+ARG CLAUDE_CODE_VERSION=2.1.220
 
 # Docker CLI.
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor \
@@ -136,9 +152,21 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor \
     apt-get update && apt-get install -y --no-install-recommends docker-ce-cli && \
     rm -rf /var/lib/apt/lists/*
 
-# Global npm packages. @moonshot-ai/kimi-code provides the `kimi` binary used
-# with Pantalk's acp driver (`command: kimi acp`) and requires Node >= 22.19.
-RUN npm install -g agent-browser @github/copilot @openai/codex @chatbotkit/cli @moonshot-ai/kimi-code
+# Pinned coding CLIs. @moonshot-ai/kimi-code provides the `kimi` binary used
+# with Pantalk's ACP driver (`command: kimi acp`).
+RUN npm install -g \
+    "agent-browser@${AGENT_BROWSER_VERSION}" \
+    "@github/copilot@${GITHUB_COPILOT_VERSION}" \
+    "@openai/codex@${CODEX_VERSION}" \
+    "@chatbotkit/cli@${CHATBOTKIT_CLI_VERSION}" \
+    "@moonshot-ai/kimi-code@${KIMI_CODE_VERSION}" \
+    "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" && \
+    agent-browser --version && \
+    copilot --version && \
+    cbk --version && \
+    codex --version && \
+    claude --version && \
+    kimi --version
 
 # Pantalk release. The archive checksum is verified against the checksums file
 # published with the same GitHub release.
@@ -160,16 +188,6 @@ RUN set -eux; \
     rm -rf "/tmp/${archive}" /tmp/pantalk-checksums.txt /tmp/pantalk-release; \
     pantalk version; \
     pantalkd --version
-
-# Claude CLI.
-# Install as root then move binary to a global path so all users can access it.
-RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    if [ -f /root/.claude/local/claude ]; then \
-        cp /root/.claude/local/claude /usr/local/bin/claude && chmod +x /usr/local/bin/claude; \
-    elif [ -f /root/.local/bin/claude ]; then \
-        cp /root/.local/bin/claude /usr/local/bin/claude && chmod +x /usr/local/bin/claude; \
-    fi && \
-    claude --version || true
 
 # GitHub CLI.
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
@@ -194,60 +212,73 @@ FROM base-plus AS system
 
 # KasmVNC UI customisation.
 COPY kasm/custom.css /usr/share/kasmvnc/www/assets/custom.css
+COPY kasm/favicon.svg /usr/share/kasmvnc/www/assets/favicon.svg
+COPY kasm/mascot.css /usr/share/kasmvnc/www/assets/mascot.css
+COPY kasm/mascot.js /usr/share/kasmvnc/www/assets/mascot.js
 COPY kasm/patch.sh /tmp/kasm-patch.sh
 RUN chmod +x /tmp/kasm-patch.sh && /tmp/kasm-patch.sh && rm /tmp/kasm-patch.sh
 
-# Desktop wallpapers.
-RUN set -eux; \
-    wallpaper_dir=/usr/share/backgrounds/simpledesktops; \
-    mkdir -p "$wallpaper_dir"; \
-    for url in \
-        "https://static.simpledesktops.com/uploads/desktops/2020/06/28/Big_Sur_Simple.png" \
-        "https://static.simpledesktops.com/uploads/desktops/2020/06/10/Adidas_Blue.png" \
-        "https://static.simpledesktops.com/uploads/desktops/2016/12/05/Untitled-1-03-01.png" \
-        "https://static.simpledesktops.com/uploads/desktops/2016/09/01/Sunset.png" \
-        "https://static.simpledesktops.com/uploads/desktops/2015/09/23/Take_OFF.png" \
-        "https://static.simpledesktops.com/uploads/desktops/2015/06/26/Overlap.png" \
-        "https://static.simpledesktops.com/uploads/desktops/2015/06/02/image_1.png" \
-        "https://static.simpledesktops.com/uploads/desktops/2015/03/02/mountains-on-mars.png"; do \
-        curl -fsSL "$url" -o "$wallpaper_dir/$(basename "$url")"; \
-    done
+# Deterministic Pantalk-branded desktop wallpaper.
+COPY wallpaper/pantalk-ghost.svg /usr/share/backgrounds/pantalk-ghost.svg
 
 # User + access configuration belongs to runtime/config layer.
-RUN if id -u agent >/dev/null 2>&1; then \
+RUN if id -u ghost >/dev/null 2>&1; then \
         :; \
     elif id -u ubuntu >/dev/null 2>&1; then \
-        usermod -l agent -d /home/agent -m ubuntu && groupmod -n agent ubuntu; \
+        usermod -l ghost -d /home/ghost -m ubuntu && groupmod -n ghost ubuntu; \
     else \
-        groupadd --system agent && useradd --system --create-home --home-dir /home/agent --gid agent --shell /bin/bash agent; \
+        groupadd --system ghost && useradd --system --create-home --home-dir /home/ghost --gid ghost --shell /bin/bash ghost; \
     fi && \
-    mkdir -p /home/agent/.vnc /home/agent/.config /home/agent/.local/share/applications && \
-    chown -R agent:agent /home/agent
+    mkdir -p \
+        /home/ghost/.vnc \
+        /home/ghost/.config \
+        /home/ghost/.local/share/applications \
+        /home/ghost/.codex \
+        /home/ghost/.claude \
+        /home/ghost/.kimi && \
+    chown -R ghost:ghost /home/ghost
 
-ENV HOME=/home/agent
+ENV HOME=/home/ghost
+ENV GTK_THEME=PantalkGhost
+# Chrome asks GTK for embedded symbolic window-control resources. Overlay only
+# those four resources so its custom frame uses the exact Openbox glyph masks.
+ENV G_RESOURCE_OVERLAYS=/org/gtk/libgtk=/usr/share/pantalk-ghost/gtk-overlay
+
+# Chrome's popup menus come from Linux's native color pipeline rather than
+# extension-theme colors. A GTK system theme therefore styles the menus,
+# dialogs, toolbar, tabs, and omnibox as one coherent near-black surface.
+COPY gtk/PantalkGhost /usr/share/themes/PantalkGhost
+COPY gtk/generate-resource-overlay.py /tmp/generate-gtk-resource-overlay.py
+COPY openbox/theme /tmp/openbox-theme
+# Generate real symbolic PNGs directly from the Openbox XBM source assets.
+RUN python3 /tmp/generate-gtk-resource-overlay.py \
+        /tmp/openbox-theme /usr/share/pantalk-ghost/gtk-overlay && \
+    rm -rf /tmp/generate-gtk-resource-overlay.py /tmp/openbox-theme
 
 # Sudo configuration belongs to the runtime/config layer.
-RUN mkdir -p /etc/sudoers.d /home/agent && \
-    echo "agent ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/agent && \
-    chmod 0440 /etc/sudoers.d/agent && \
-    touch /home/agent/.sudo_as_admin_successful /home/agent/.hushlogin && \
-    chown agent:agent /home/agent/.sudo_as_admin_successful /home/agent/.hushlogin
+RUN mkdir -p /etc/sudoers.d /home/ghost && \
+    echo "ghost ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ghost && \
+    chmod 0440 /etc/sudoers.d/ghost && \
+    touch /home/ghost/.sudo_as_admin_successful /home/ghost/.hushlogin && \
+    chown ghost:ghost /home/ghost/.sudo_as_admin_successful /home/ghost/.hushlogin
 
-# Chrome preferences.
-RUN mkdir -p /home/agent/.config/google-chrome/Default && \
-    printf '{\n  "browser": {\n    "has_seen_welcome_page": true,\n    "check_default_browser": false\n  },\n  "bookmark_bar": { "show_on_all_tabs": false },\n  "distribution": {\n    "skip_first_run_ui": true,\n    "show_welcome_page": false,\n    "import_bookmarks": false,\n    "make_chrome_default_for_user": false,\n    "suppress_first_run_default_browser_prompt": true\n  }\n}' \
-    > /home/agent/.config/google-chrome/Default/Preferences && \
-    touch /home/agent/.config/google-chrome/"First Run" && \
-    chown -R agent:agent /home/agent/.config/google-chrome
+# Chrome preferences. `system_theme: 1` selects GTK on Linux; unlike a Chrome
+# extension theme, it also reaches native menus and other popup surfaces.
+RUN mkdir -p /home/ghost/.config/google-chrome/Default && \
+    printf '{\n  "browser": {\n    "has_seen_welcome_page": true,\n    "check_default_browser": false\n  },\n  "bookmark_bar": { "show_on_all_tabs": false },\n  "distribution": {\n    "skip_first_run_ui": true,\n    "show_welcome_page": false,\n    "import_bookmarks": false,\n    "make_chrome_default_for_user": false,\n    "suppress_first_run_default_browser_prompt": true\n  },\n  "extensions": {\n    "theme": {\n      "system_theme": 1\n    }\n  }\n}' \
+    > /home/ghost/.config/google-chrome/Default/Preferences && \
+    touch /home/ghost/.config/google-chrome/"First Run" && \
+    chown -R ghost:ghost /home/ghost/.config/google-chrome
 
-# Suppress default-browser prompt via managed policy.
+# Suppress the default-browser prompt via managed policy. Do not set
+# BrowserThemeColor here: that policy overrides Chrome's GTK system theme.
 RUN mkdir -p /etc/opt/chrome/policies/managed && \
     printf '{\n  "DefaultBrowserSettingEnabled": false,\n  "BrowserSignin": 0,\n  "HomepageLocation": "file:///opt/browser/index.html",\n  "HomepageIsNewTabPage": false,\n  "ShowHomeButton": true,\n  "RestoreOnStartup": 4,\n  "RestoreOnStartupURLs": [\n    "file:///opt/browser/index.html"\n  ]\n}' \
     > /etc/opt/chrome/policies/managed/chrome-policy.json
 
 # Register Chrome as the default browser (system-level alternatives).
-RUN mkdir -p /home/agent/.local/share/applications && \
-    chown -R agent:agent /home/agent/.local && \
+RUN mkdir -p /home/ghost/.local/share/applications && \
+    chown -R ghost:ghost /home/ghost/.local && \
     update-alternatives --install /usr/bin/x-www-browser x-www-browser /opt/google/chrome/google-chrome 200 2>/dev/null || true && \
     update-alternatives --set x-www-browser /opt/google/chrome/google-chrome 2>/dev/null || true
 
@@ -263,15 +294,24 @@ COPY openbox/autostart /etc/xdg/openbox/autostart
 COPY cortile/cortilectl /usr/local/bin/cortilectl
 COPY shell/welcome /usr/local/bin/welcome
 COPY shell/chromium /usr/local/bin/chromium
+COPY shell/agent-runtime-login /usr/local/bin/agent-runtime-login
+COPY shell/ghost-panel-status /usr/local/bin/ghost-panel-status
+COPY shell/ghost-harness /usr/local/bin/ghost-harness
 RUN mkdir -p /etc/bash.bashrc.d
 COPY shell/bashrc /etc/bash.bashrc.d/pantalk-prompt.sh
 RUN echo '[ -d /etc/bash.bashrc.d ] && for f in /etc/bash.bashrc.d/*.sh; do . "$f"; done' >> /etc/bash.bashrc
 COPY browser /opt/browser
-COPY config/pantalk.yaml /usr/local/share/station/pantalk-config.yaml
+COPY config/pantalk.yaml /usr/local/share/ghost/pantalk-config.yaml
 COPY openbox/theme /usr/share/themes/Triste-Crimson/openbox-3
 COPY tint2/tint2rc /etc/xdg/tint2/tint2rc
-RUN chmod +x /etc/xdg/openbox/autostart /usr/local/bin/cortilectl /usr/local/bin/welcome \
-    /usr/local/bin/chromium
+RUN chmod +x \
+    /etc/xdg/openbox/autostart \
+    /usr/local/bin/cortilectl \
+    /usr/local/bin/welcome \
+    /usr/local/bin/chromium \
+    /usr/local/bin/agent-runtime-login \
+    /usr/local/bin/ghost-panel-status \
+    /usr/local/bin/ghost-harness
 
 # Ensure a desktop entry exists for openbox-session so KasmVNC's
 # select-de mechanism can discover and start it.
@@ -280,11 +320,11 @@ RUN mkdir -p /usr/share/xsessions && \
     > /usr/share/xsessions/openbox.desktop
 
 # KasmVNC configuration.
-USER agent
+USER ghost
 
 # Default Cortile config: floating by default, user enables tiling on demand.
 RUN mkdir -p "$HOME/.config/cortile"
-COPY --chown=agent:agent cortile/cortile-config.toml /home/agent/.config/cortile/config.toml
+COPY --chown=ghost:ghost cortile/cortile-config.toml /home/ghost/.config/cortile/config.toml
 
 # xstartup - launch Openbox.
 RUN printf '#!/bin/bash\nexec openbox-session\n' > "$HOME/.vnc/xstartup" && \
@@ -298,20 +338,20 @@ RUN printf 'network:\n  ssl:\n    pem_certificate:\n    pem_key:\n    require_ss
 # Self-signed cert (kasmvncserver wrapper still checks for it).
 RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
     -keyout "$HOME/.vnc/self.pem" -out "$HOME/.vnc/self.pem" \
-    -subj "/CN=agent" 2>/dev/null
+    -subj "/CN=ghost" 2>/dev/null
 
 # VNC password.
-RUN bash -c 'echo -e "kasmvnc\nkasmvnc\n" | kasmvncpasswd -u agent -wo'
+RUN bash -c 'echo -e "kasmvnc\nkasmvnc\n" | kasmvncpasswd -u ghost -wo'
 
 EXPOSE 6901
 WORKDIR /workspace
-VOLUME ["/workspace", "/home/agent/.config/pantalk", "/home/agent/.local/share/pantalk", "/home/agent/.codex", "/home/agent/.claude"]
+VOLUME ["/workspace", "/home/ghost/.config/pantalk", "/home/ghost/.local/share/pantalk", "/home/ghost/.codex", "/home/ghost/.claude", "/home/ghost/.kimi"]
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Target: station - independently runnable Pantalk environment.
+# Target: ghost - independently runnable Pantalk environment.
 # ═══════════════════════════════════════════════════════════════════
-FROM system AS station
+FROM system AS ghost
 
 USER root
 

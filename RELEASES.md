@@ -1,6 +1,6 @@
-# Releasing Pantalk Station
+# Releasing Pantalk Ghost
 
-Pantalk Station releases are driven by the `VERSION` file.
+Pantalk Ghost releases are driven by the `VERSION` file.
 
 ## Release process
 
@@ -8,11 +8,11 @@ Pantalk Station releases are driven by the `VERSION` file.
 2. Move the relevant entries from `Unreleased` into a matching version section
    in `CHANGELOG.md`.
 3. Merge the release change into `main`.
-4. CI builds and smoke-tests the Station image.
+4. CI builds and smoke-tests the Ghost image.
 5. After CI succeeds, the tag workflow creates an annotated `v*` tag at the
    exact tested commit.
 6. The release workflow publishes the image to
-   `ghcr.io/pantalk/station`, creates its immutable version tags, and creates a
+   `ghcr.io/pantalk/ghost`, creates its immutable version tags, and creates a
    matching GitHub Release.
 
 Existing tags and releases are never replaced.

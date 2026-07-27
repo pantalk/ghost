@@ -1,5 +1,8 @@
 name: CI
 
+# Building and smoke-testing the image costs many minutes, so prose-only
+# changes skip it. VERSION and CHANGELOG.md deliberately keep triggering CI
+# because they express release intent.
 on:
   push:
     branches:
@@ -7,10 +10,22 @@ on:
       - next
     tags-ignore:
       - 'v*'
+    paths-ignore:
+      - 'README.md'
+      - 'RELEASES.md'
+      - 'IMAGE-SIZE.md'
+      - 'deployments/**/*.md'
+      - '.gitignore'
   pull_request:
     branches:
       - main
       - next
+    paths-ignore:
+      - 'README.md'
+      - 'RELEASES.md'
+      - 'IMAGE-SIZE.md'
+      - 'deployments/**/*.md'
+      - '.gitignore'
 
 permissions:
   contents: read
@@ -40,6 +55,9 @@ jobs:
             exit 1
           fi
 
+      - name: Validate scripts and pinned metadata
+        run: make check
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -50,7 +68,7 @@ jobs:
           load: true
           platforms: linux/amd64
           push: false
-          tags: pantalk/station:ci
+          tags: pantalk/ghost:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -59,7 +77,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          container="pantalk-station-ci"
+          container="pantalk-ghost-ci"
           cleanup() {
             docker rm --force "$container" >/dev/null 2>&1 || true
           }
@@ -70,7 +88,7 @@ jobs:
             --platform linux/amd64 \
             --shm-size 1g \
             --publish 127.0.0.1:6902:6901 \
-            pantalk/station:ci
+            pantalk/ghost:ci
 
           ready=false
           for attempt in $(seq 1 60); do
@@ -82,16 +100,21 @@ jobs:
           done
 
           if [ "$ready" != "true" ]; then
-            echo "Pantalk Station did not become ready within 120 seconds" >&2
-            docker logs --tail 100 "$container" >&2 || true
+            echo "Pantalk Ghost did not become ready within 120 seconds" >&2
+            docker logs --tail 150 "$container" >&2 || true
             exit 1
           fi
 
-          if docker exec "$container" sh -c \
-            'command -v ergo || command -v halloy || command -v halloy-station' \
-            >/dev/null 2>&1; then
-            echo "Station still contains bundled IRC software" >&2
-            exit 1
-          fi
+          docker exec "$container" bash -ec '
+            for command in agent-runtime-login ghost-panel-status \
+              pantalk pantalkd agent-browser copilot cbk codex claude kimi \
+              chromium; do
+              command -v "$command" >/dev/null
+            done
+            ! command -v ergo >/dev/null
+            ! command -v halloy >/dev/null
+            ! command -v halloy-node >/dev/null
+            curl -fsS http://127.0.0.1:6901/ >/dev/null
+          '
 
-          echo "Pantalk Station is ready and transport-neutral"
+          echo "Pantalk Ghost is ready and transport-neutral"

@@ -25,12 +25,12 @@ mmctl_remote() {
   compose exec -T mattermost /mattermost/bin/mmctl "$@"
 }
 
-station_pantalk() {
+ghost_pantalk() {
   compose exec \
     -T \
-    --user agent \
+    --user ghost \
     --env XDG_RUNTIME_DIR=/run/user/1000 \
-    station \
+    ghost \
     pantalk "$@"
 }
 
@@ -51,22 +51,22 @@ wait_for_url() {
 
 wait_for_url Mattermost \
   "http://127.0.0.1:${MATTERMOST_PORT:-8065}/api/v4/system/ping"
-wait_for_url Station \
-  "http://127.0.0.1:${STATION_PORT:-6902}/index.html"
+wait_for_url Ghost \
+  "http://127.0.0.1:${GHOST_PORT:-6902}/index.html"
 
 for attempt in $(seq 1 60); do
-  if station_pantalk ping >/dev/null 2>&1; then
+  if ghost_pantalk ping >/dev/null 2>&1; then
     break
   fi
   if [ "$attempt" -eq 60 ]; then
-    echo "Pantalk did not become ready inside Station" >&2
-    compose logs --tail 100 station >&2 || true
+    echo "Pantalk did not become ready inside Ghost" >&2
+    compose logs --tail 100 ghost >&2 || true
     exit 1
   fi
   sleep 2
 done
 
-bots="$(station_pantalk bots --json)"
+bots="$(ghost_pantalk bots --json)"
 for bot in codex claude; do
   if ! grep -Fq "\"name\":\"$bot\"" <<< "$bots" &&
     ! grep -Fq "\"name\": \"$bot\"" <<< "$bots"; then
@@ -102,25 +102,25 @@ if [ -z "$channel_id" ]; then
   exit 1
 fi
 
-outbound_marker="pantalk-station-outbound-$(date +%s)-$$"
-station_pantalk send \
+outbound_marker="pantalk-ghost-outbound-$(date +%s)-$$"
+ghost_pantalk send \
   --bot codex \
   --channel "$channel_id" \
   --text "$outbound_marker" >/dev/null
 
-inbound_marker="pantalk-station-inbound-$(date +%s)-$$"
+inbound_marker="pantalk-ghost-inbound-$(date +%s)-$$"
 mmctl_remote post create "$MATTERMOST_TEAM:$MATTERMOST_CHANNEL" \
   --message "$inbound_marker" >/dev/null
 
 for attempt in $(seq 1 30); do
   history="$(
-    station_pantalk history \
+    ghost_pantalk history \
       --bot codex \
       --search "$inbound_marker" \
       --json
   )"
   if grep -Fq "$inbound_marker" <<< "$history"; then
-    echo "Mattermost and Station passed the messaging smoke test"
+    echo "Mattermost and Ghost passed the messaging smoke test"
     exit 0
   fi
   sleep 1
