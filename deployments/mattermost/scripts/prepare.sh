@@ -22,7 +22,7 @@ if [ ! -s "$env_file" ]; then
   cat > "$temporary_file" <<EOF
 POSTGRES_IMAGE=postgres:18.2-alpine
 MATTERMOST_IMAGE=mattermost/mattermost-team-edition:11.7.0
-GHOST_IMAGE=ghcr.io/pantalk/ghost:0.0.8
+GHOST_IMAGE=ghcr.io/pantalk/ghost:0.0.9
 
 PANTALK_VERSION=0.0.12
 

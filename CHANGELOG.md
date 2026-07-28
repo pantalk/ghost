@@ -6,6 +6,16 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.0.9] - 2026-07-28
+
+### Fixed
+
+- Start correctly with macOS folders mounted by Apple container. Those
+  VirtioFS shares are exposed as root-owned and reject ownership changes, so
+  Ghost now detects fixed ownership and runs as root inside that container's
+  dedicated Linux VM. Ownership-mutable Docker volumes continue to use the
+  unprivileged `ghost` account.
+
 ## [0.0.8] - 2026-07-27
 
 ### Added

@@ -44,6 +44,11 @@ container run --detach \
   ghcr.io/pantalk/ghost:latest
 ```
 
+Apple exposes macOS host-folder mounts as fixed, root-owned shares. When Ghost
+detects those mounts, it runs as root inside that container's isolated Linux VM
+so its workspace and configuration remain writable. Named volumes and
+ownership-mutable Docker or Podman storage continue to run as `ghost`.
+
 Open <http://127.0.0.1:6902>. This is the Ghost computer itself, presented
 through KasmVNC rather than a separate dashboard. Open **Setup** from the
 desktop menu and sign in to Codex, Claude Code, or Kimi Code.
