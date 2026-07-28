@@ -62,8 +62,10 @@ ownership_stamp="$HOME/.config/pantalk/.ownership-normalized"
 # inside its dedicated Linux VM. Docker volumes remain ownership-mutable and
 # continue to run the desktop as the unprivileged ghost account.
 runtime_user=ghost
+fixed_mounts=false
 if ! chown ghost:ghost "${persistent_paths[@]}" 2>/dev/null; then
     runtime_user=root
+    fixed_mounts=true
     echo "[ghost] host mounts have fixed ownership; using the VM root account"
 fi
 runtime_group="$runtime_user"
@@ -96,7 +98,13 @@ install_runtime_file() {
     if [ "$runtime_user" = ghost ]; then
         install -m 0600 -o ghost -g ghost "$source" "$target"
     else
-        install -m 0600 "$source" "$target"
+        # Apple VirtioFS rejects chmod as well as chown. The containing
+        # Launcher agent directory is private on macOS, and the only process
+        # using these files in the VM runs as root in fixed-mount mode.
+        (
+            umask 077
+            cp --no-preserve=mode,ownership "$source" "$target"
+        )
     fi
 }
 
@@ -112,7 +120,12 @@ if [ -d "$workspace_seed_dir" ]; then
     fi
 fi
 
-chmod 700 "$XDG_RUNTIME_DIR" "$HOME/.config/pantalk"
+chmod 700 "$XDG_RUNTIME_DIR"
+if [ "$fixed_mounts" = false ]; then
+    chmod 700 "$HOME/.config/pantalk"
+else
+    echo "[ghost] keeping host-managed permissions on persistent mounts"
+fi
 chmod 1777 /tmp/.X11-unix
 
 # The KasmVNC launcher validates Ubuntu's snake-oil key even when TLS is

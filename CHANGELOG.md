@@ -6,6 +6,14 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.0.10] - 2026-07-28
+
+### Fixed
+
+- Avoid `chmod` and ownership-preserving file installation on macOS folders
+  mounted by Apple container. Its VirtioFS shares reject both ownership and
+  permission changes, even when Ghost is already using the VM root account.
+
 ## [0.0.9] - 2026-07-28
 
 ### Fixed
