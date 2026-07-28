@@ -8,8 +8,6 @@ export HOME=/home/ghost
 export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_DATA_HOME="$HOME/.local/share"
 
-ghost_uid="$(id -u ghost)"
-export XDG_RUNTIME_DIR="/run/user/${ghost_uid}"
 export PANTALK_CONFIG="${PANTALK_CONFIG:-$HOME/.config/pantalk/config.yaml}"
 
 resolution="${GHOST_RESOLUTION:-1920x1080}"
@@ -29,7 +27,6 @@ mkdir -p \
     "$HOME/.codex" \
     "$HOME/.claude" \
     "$HOME/.kimi" \
-    "$XDG_RUNTIME_DIR" \
     /workspace \
     /var/log/ghost \
     /tmp/.X11-unix
@@ -60,7 +57,21 @@ persistent_paths=(
 )
 ownership_stamp="$HOME/.config/pantalk/.ownership-normalized"
 
-chown ghost:ghost \
+# Apple container exposes macOS bind mounts as root-owned VirtioFS shares and
+# rejects chown on them. In that environment, keep the desktop process as root
+# inside its dedicated Linux VM. Docker volumes remain ownership-mutable and
+# continue to run the desktop as the unprivileged ghost account.
+runtime_user=ghost
+if ! chown ghost:ghost "${persistent_paths[@]}" 2>/dev/null; then
+    runtime_user=root
+    echo "[ghost] host mounts have fixed ownership; using the VM root account"
+fi
+runtime_group="$runtime_user"
+runtime_uid="$(id -u "$runtime_user")"
+export XDG_RUNTIME_DIR="/run/user/${runtime_uid}"
+mkdir -p "$XDG_RUNTIME_DIR"
+
+chown "$runtime_user:$runtime_group" \
     "$HOME" \
     "$HOME/.vnc" \
     "$HOME/.config" \
@@ -69,23 +80,36 @@ chown ghost:ghost \
     "$HOME/.local/share/applications" \
     "$ranger_data_dir" \
     "$ranger_bookmarks" \
-    "${persistent_paths[@]}" \
     "$XDG_RUNTIME_DIR" \
     /var/log/ghost
 
-if [ ! -e "$ownership_stamp" ]; then
+if [ "$runtime_user" = ghost ] && [ ! -e "$ownership_stamp" ]; then
     chown -R ghost:ghost "${persistent_paths[@]}" /var/log/ghost
     touch "$ownership_stamp"
     chown ghost:ghost "$ownership_stamp"
     echo "[ghost] normalized ownership of the persistent volumes"
 fi
 
+install_runtime_file() {
+    local source="$1"
+    local target="$2"
+    if [ "$runtime_user" = ghost ]; then
+        install -m 0600 -o ghost -g ghost "$source" "$target"
+    else
+        install -m 0600 "$source" "$target"
+    fi
+}
+
 # Seed image-owned workspace defaults without replacing files in the persistent
 # workspace. Keeping the source outside /workspace makes new defaults available
 # to both brand-new volumes and existing volumes after an image upgrade.
 workspace_seed_dir="/usr/local/share/ghost/workspace"
 if [ -d "$workspace_seed_dir" ]; then
-    cp --archive --update=none "$workspace_seed_dir/." /workspace/
+    if [ "$runtime_user" = ghost ]; then
+        cp --archive --update=none "$workspace_seed_dir/." /workspace/
+    else
+        cp --recursive --update=none "$workspace_seed_dir/." /workspace/
+    fi
 fi
 
 chmod 700 "$XDG_RUNTIME_DIR" "$HOME/.config/pantalk"
@@ -93,14 +117,13 @@ chmod 1777 /tmp/.X11-unix
 
 # The KasmVNC launcher validates Ubuntu's snake-oil key even when TLS is
 # disabled. Its directory is restricted to members of the ssl-cert group.
-if getent group ssl-cert >/dev/null 2>&1; then
+if [ "$runtime_user" = ghost ] && getent group ssl-cert >/dev/null 2>&1; then
     usermod -a -G ssl-cert ghost
 fi
 
 if [ ! -s "$PANTALK_CONFIG" ]; then
-    install -m 0600 -o ghost -g ghost \
+    install_runtime_file \
         /usr/local/share/ghost/pantalk-config.yaml "$PANTALK_CONFIG"
-    chown ghost:ghost "$PANTALK_CONFIG"
     echo "[ghost] created starter Pantalk configuration"
 elif yq -e '
     (.bots | length) == 2 and
@@ -112,7 +135,7 @@ elif yq -e '
     .bots[1].endpoint == "127.0.0.1:6667"
 ' "$PANTALK_CONFIG" >/dev/null 2>&1; then
     cp --no-clobber "$PANTALK_CONFIG" "${PANTALK_CONFIG}.ghost-irc.bak"
-    install -m 0600 -o ghost -g ghost \
+    install_runtime_file \
         /usr/local/share/ghost/pantalk-config.yaml "$PANTALK_CONFIG"
     echo "[ghost] migrated the bundled IRC configuration to the local starter"
 fi
@@ -151,7 +174,7 @@ if [ -n "$codex_sandbox_mode" ] &&
         printf 'sandbox_mode = "%s"\n\n' "$codex_sandbox_mode"
         [ -s "$codex_config" ] && cat "$codex_config"
     } > "$codex_sandbox_tmp"
-    install -m 0600 -o ghost -g ghost "$codex_sandbox_tmp" "$codex_config"
+    install_runtime_file "$codex_sandbox_tmp" "$codex_config"
     rm -f "$codex_sandbox_tmp"
     echo "[ghost] set Codex sandbox_mode=$codex_sandbox_mode" \
         "(no usable bubblewrap in a container)"
@@ -161,7 +184,9 @@ if [ "${GHOST_TRUST_WORKSPACE:-true}" = "true" ]; then
     if ! grep -Fq "[projects.\"$harness_workdir\"]" "$codex_config" 2>/dev/null; then
         printf '\n[projects."%s"]\ntrust_level = "trusted"\n' \
             "$harness_workdir" >> "$codex_config"
-        chown ghost:ghost "$codex_config"
+        if [ "$runtime_user" = ghost ]; then
+            chown ghost:ghost "$codex_config"
+        fi
         echo "[ghost] recorded $harness_workdir as trusted for Codex"
     fi
 
@@ -176,8 +201,7 @@ if [ "${GHOST_TRUST_WORKSPACE:-true}" = "true" ]; then
         if jq --arg dir "$harness_workdir" \
             '.projects[$dir].hasTrustDialogAccepted = true' \
             "$claude_config" > "$claude_trust_tmp" 2>/dev/null; then
-            install -m 0600 -o ghost -g ghost \
-                "$claude_trust_tmp" "$claude_config"
+            install_runtime_file "$claude_trust_tmp" "$claude_config"
             echo "[ghost] recorded $harness_workdir as trusted for Claude Code"
         fi
         rm -f "$claude_trust_tmp"
@@ -193,7 +217,8 @@ gpu_node_blocked=""
 for node in /dev/dri/renderD*; do
     [ -e "$node" ] || continue
     printf -v node_q '%q' "$node"
-    if su -s /bin/bash -c "test -r $node_q && test -w $node_q" ghost; then
+    if su -s /bin/bash -c \
+        "test -r $node_q && test -w $node_q" "$runtime_user"; then
         gpu_node="$node"
         break
     fi
@@ -268,23 +293,27 @@ exec openbox-session
 XSTARTUP
 chmod +x "$HOME/.vnc/xstartup"
 touch "$HOME/.vnc/.de-was-selected"
-chown -R ghost:ghost "$HOME/.vnc"
+chown -R "$runtime_user:$runtime_group" "$HOME/.vnc"
 
 # KasmVNC checks for these files even though browser authentication and TLS are
 # disabled for this loopback-only local image.
 # shellcheck disable=SC2016
 su -s /bin/bash -c '
+    export HOME=/home/ghost
     openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
         -keyout "$HOME/.vnc/self.pem" \
         -out "$HOME/.vnc/self.pem" \
         -subj "/CN=pantalk-ghost" >/dev/null 2>&1
     printf "ghost\nghost\n" | kasmvncpasswd -u ghost -wo >/dev/null 2>&1 || true
-' ghost
+' "$runtime_user"
 
 # shellcheck disable=SC2329
 cleanup() {
     echo "[ghost] stopping"
-    su -s /bin/bash -c 'kasmvncserver -kill :1 >/dev/null 2>&1 || true' ghost
+    su -s /bin/bash -c \
+        'export HOME=/home/ghost
+        kasmvncserver -kill :1 >/dev/null 2>&1 || true' \
+        "$runtime_user"
     jobs -pr | xargs -r kill 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
@@ -297,11 +326,14 @@ if [ "${PANTALK_AUTOSTART:-true}" = "true" ]; then
         export XDG_RUNTIME_DIR='$XDG_RUNTIME_DIR'
         export PANTALK_CONFIG='$PANTALK_CONFIG'
         exec pantalkd --config '$PANTALK_CONFIG'
-    " ghost >>/var/log/ghost/pantalkd.log 2>&1 &
+    " "$runtime_user" >>/var/log/ghost/pantalkd.log 2>&1 &
     echo "[ghost] pantalkd started"
 fi
 
-su -s /bin/bash -c 'kasmvncserver -kill :1 >/dev/null 2>&1 || true' ghost
+su -s /bin/bash -c \
+    'export HOME=/home/ghost
+    kasmvncserver -kill :1 >/dev/null 2>&1 || true' \
+    "$runtime_user"
 rm -f /tmp/.X1-lock /tmp/.X11-unix/X1
 
 su -s /bin/bash -c "
@@ -320,7 +352,7 @@ su -s /bin/bash -c "
         -httpd /usr/share/kasmvnc/www \
         -BlacklistThreshold 0 \
         -FreeKeyMappings
-" ghost >>/var/log/ghost/kasmvnc.log 2>&1 &
+" "$runtime_user" >>/var/log/ghost/kasmvnc.log 2>&1 &
 
 for attempt in $(seq 1 40); do
     if curl -fsS http://127.0.0.1:6901/ >/dev/null 2>&1; then

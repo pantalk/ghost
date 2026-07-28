@@ -72,6 +72,14 @@ grep -Fq \
 grep -Fq \
     'cp --archive --update=none "$workspace_seed_dir/." /workspace/' \
     "$project_dir/init.sh"
+grep -Fq \
+    'cp --recursive --update=none "$workspace_seed_dir/." /workspace/' \
+    "$project_dir/init.sh"
+grep -Fq \
+    'host mounts have fixed ownership; using the VM root account' \
+    "$project_dir/init.sh"
+grep -Fq 'runtime_user=ghost' "$project_dir/init.sh"
+grep -Fq 'runtime_user=root' "$project_dir/init.sh"
 grep -Fq '# Pantalk Ghost Workspace' "$project_dir/workspace/AGENT.md"
 cp --archive --update=none "$project_dir/workspace/." "$workspace_test_dir/"
 cmp "$project_dir/workspace/AGENT.md" "$workspace_test_dir/AGENT.md"
