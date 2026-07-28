@@ -80,6 +80,16 @@ grep -Fq \
     "$project_dir/init.sh"
 grep -Fq 'runtime_user=ghost' "$project_dir/init.sh"
 grep -Fq 'runtime_user=root' "$project_dir/init.sh"
+grep -Fq \
+    'cp --no-preserve=mode,ownership "$source" "$target"' \
+    "$project_dir/init.sh"
+grep -Fq 'chmod 700 "$XDG_RUNTIME_DIR"' "$project_dir/init.sh"
+if grep -Fq \
+    'chmod 700 "$XDG_RUNTIME_DIR" "$HOME/.config/pantalk"' \
+    "$project_dir/init.sh"; then
+    echo "Fixed-ownership startup still chmods the Pantalk host mount." >&2
+    exit 1
+fi
 grep -Fq '# Pantalk Ghost Workspace' "$project_dir/workspace/AGENT.md"
 cp --archive --update=none "$project_dir/workspace/." "$workspace_test_dir/"
 cmp "$project_dir/workspace/AGENT.md" "$workspace_test_dir/AGENT.md"

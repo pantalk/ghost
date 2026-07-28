@@ -63,7 +63,7 @@ services:
   ghost:
     profiles:
       - ghost
-    image: ${GHOST_IMAGE:-ghcr.io/pantalk/ghost:0.0.9}
+    image: ${GHOST_IMAGE:-ghcr.io/pantalk/ghost:0.0.10}
     restart: unless-stopped
     shm_size: 1gb
     depends_on:
