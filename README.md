@@ -74,11 +74,11 @@ docker run --detach \
   --shm-size 1g \
   --publish 127.0.0.1:6902:6901 \
   --volume pantalk-ghost-workspace:/workspace \
-  --volume pantalk-ghost-config:/home/ghost/.config/pantalk \
-  --volume pantalk-ghost-state:/home/ghost/.local/share/pantalk \
-  --volume pantalk-ghost-codex:/home/ghost/.codex \
-  --volume pantalk-ghost-claude:/home/ghost/.claude \
-  --volume pantalk-ghost-kimi:/home/ghost/.kimi \
+  --volume pantalk-ghost-config:/home/agent/.config/pantalk \
+  --volume pantalk-ghost-state:/home/agent/.local/share/pantalk \
+  --volume pantalk-ghost-codex:/home/agent/.codex \
+  --volume pantalk-ghost-claude:/home/agent/.claude \
+  --volume pantalk-ghost-kimi:/home/agent/.kimi \
   ghcr.io/pantalk/ghost:latest
 ```
 
@@ -385,6 +385,41 @@ so there is no separate preference to keep in sync. The ghost is drawn by your
 browser rather than the remote desktop, so it costs the session nothing; only
 the ghost itself takes clicks, and the rest of that corner still belongs to the
 desktop underneath.
+
+## Relationship to the Launcher desktop base
+
+Ghost is a product image on top of
+`ghcr.io/pdparchitect/launcher-image-base-desktop`. That base was originally
+ported *from* this desktop; now that several images share it, Ghost consumes it
+rather than keeping a second copy of a stack it no longer owns alone. The base
+supplies Ubuntu, Node, KasmVNC, Openbox, Cortile, tint2, kitty, the browser, the
+GTK theme, the `agent` account, and the entrypoint. This repository supplies
+Pantalk.
+
+That split is what the source layout reflects:
+
+| Path                             | What it is                                      |
+| -------------------------------- | ----------------------------------------------- |
+| `Dockerfile`                     | Pantalk and the agent runtimes                   |
+| `overlay/`                       | Files copied over the base's defaults            |
+| `overlay/etc/desktop/startup.d/` | Programs the entrypoint runs before the session  |
+| `deployments/`                   | Compose recipes; not part of the image           |
+
+Three consequences are worth knowing:
+
+- The desktop user is `agent`, homed at `/home/agent`, and logs live in
+  `/var/log/launcher-desktop`.
+- Desktop-level settings use the base's names — `DESKTOP_RESOLUTION`,
+  `DESKTOP_VNC_STATS`, `DESKTOP_TITLE`. Ghost- and Pantalk-level settings keep
+  their `GHOST_*` and `PANTALK_*` names.
+- The mascot is Ghost's own. The base's `kasm-patch` does not know about it, so
+  `kasm-mascot` injects it separately after the base has branded the client.
+
+To build against a different base, override `DESKTOP_IMAGE`:
+
+```bash
+make up DESKTOP_IMAGE=ghcr.io/pdparchitect/launcher-image-base-desktop:0.2.0
+```
 
 ## Pinned components
 

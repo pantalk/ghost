@@ -1,0 +1,15 @@
+#!/bin/bash
+# The terminal the session opens with.
+#
+# The base opens a bare shell. Ghost opens the same shell behind its
+# first-launch greeting, so the desktop explains Pantalk and the agent runtimes
+# before anything else happens.
+
+set -euo pipefail
+
+exec kitty \
+    --title "${DESKTOP_TITLE:-Pantalk Ghost}" \
+    --override remember_window_size=no \
+    --override initial_window_width=100c \
+    --override initial_window_height=34c \
+    -e bash -lc 'pantalk-greeting; exec bash'

@@ -13,7 +13,7 @@ if [ -n "$expected_arch" ] && [ "$actual_arch" != "$expected_arch" ]; then
 fi
 
 "$docker" exec "$container" bash -ec '
-    for command in agent-runtime-login ghost-panel-status ghost-harness \
+    for command in agent-runtime-login desktop-panel-status desktop-harness \
         pantalk pantalkd \
         agent-browser copilot cbk codex claude kimi chromium; do
         command -v "$command" >/dev/null
@@ -44,16 +44,16 @@ fi
 # architecture's real headed browser on KasmVNC's display, find its visible
 # window through X11, and capture the same framebuffer a remote user sees.
 "$docker" exec --detach \
-    --user ghost \
+    --user agent \
     --env DISPLAY=:1 \
-    --env HOME=/home/ghost \
+    --env HOME=/home/agent \
     "$container" \
     chromium file:///opt/browser/index.html
 
 browser_ready=false
 for attempt in $(seq 1 30); do
     if "$docker" exec \
-        --user ghost \
+        --user agent \
         --env DISPLAY=:1 \
         "$container" \
         xdotool search --onlyvisible --name 'Pantalk Ghost Browser' \
@@ -71,7 +71,7 @@ if [ "$browser_ready" != "true" ]; then
 fi
 
 "$docker" exec \
-    --user ghost \
+    --user agent \
     --env DISPLAY=:1 \
     "$container" \
     scrot /tmp/ghost-browser-smoke.png

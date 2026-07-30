@@ -6,7 +6,7 @@ project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 temporary_dir="$(mktemp -d)"
 trap 'rm -rf "$temporary_dir"' EXIT
 
-helper="$project_dir/shell/agent-runtime-login"
+helper="$project_dir/overlay/usr/local/bin/agent-runtime-login"
 runtime_log="$temporary_dir/runtime.log"
 export runtime_log
 

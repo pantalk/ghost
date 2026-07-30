@@ -28,7 +28,7 @@ mmctl_remote() {
 ghost_pantalk() {
   compose exec \
     -T \
-    --user ghost \
+    --user agent \
     --env XDG_RUNTIME_DIR=/run/user/1000 \
     ghost \
     pantalk "$@"

@@ -1,0 +1,69 @@
+#!/bin/bash
+# Seed the Pantalk configuration and start the daemon.
+#
+# The desktop base runs this before the X session exists, which is right for a
+# daemon: pantalkd has no window, it should be connected by the time the
+# desktop opens, and it should survive an X session that restarts under it.
+#
+# The base passes the account the desktop will run as in DESKTOP_RUNTIME_USER.
+# On Apple `container`, bind mounts are fixed-ownership VirtioFS shares and the
+# base falls back to running as root, so nothing here may assume `agent`.
+
+set -euo pipefail
+
+runtime_user="${DESKTOP_RUNTIME_USER:-agent}"
+export HOME=/home/agent
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_DATA_HOME="$HOME/.local/share"
+export PANTALK_CONFIG="${PANTALK_CONFIG:-$HOME/.config/pantalk/config.yaml}"
+
+log_file=/var/log/launcher-desktop/pantalkd.log
+starter=/usr/local/share/ghost/pantalk-config.yaml
+
+mkdir -p "$(dirname "$PANTALK_CONFIG")" "$(dirname "$log_file")"
+
+# Apple VirtioFS rejects chown and chmod, so both are best-effort. The
+# containing directory is already restricted in that case.
+install_runtime_file() {
+    install -m 0600 "$1" "$2" 2>/dev/null ||
+        { cp "$1" "$2" && chmod 0600 "$2" 2>/dev/null; } || cp "$1" "$2"
+    chown "$runtime_user:$runtime_user" "$2" 2>/dev/null || true
+}
+
+if [ ! -s "$PANTALK_CONFIG" ]; then
+    install_runtime_file "$starter" "$PANTALK_CONFIG"
+    echo "[ghost] created starter Pantalk configuration"
+elif yq -e '
+    (.bots | length) == 2 and
+    .bots[0].name == "codex" and
+    .bots[0].type == "irc" and
+    .bots[0].endpoint == "127.0.0.1:6667" and
+    .bots[1].name == "claude" and
+    .bots[1].type == "irc" and
+    .bots[1].endpoint == "127.0.0.1:6667"
+' "$PANTALK_CONFIG" >/dev/null 2>&1; then
+    cp --no-clobber "$PANTALK_CONFIG" "${PANTALK_CONFIG}.ghost-irc.bak"
+    install_runtime_file "$starter" "$PANTALK_CONFIG"
+    echo "[ghost] migrated the bundled IRC configuration to the local starter"
+fi
+
+if [ "${PANTALK_AUTOSTART:-true}" != "true" ]; then
+    echo "[ghost] pantalkd autostart disabled"
+    exit 0
+fi
+
+touch "$log_file"
+chown "$runtime_user:$runtime_user" "$log_file" 2>/dev/null || true
+
+# Detached into its own session so it survives this script returning to the
+# entrypoint. Without setsid the daemon is killed with this script's process
+# group the moment the base moves on to starting the desktop.
+setsid su -s /bin/bash -c "
+    export HOME='$HOME'
+    export XDG_CONFIG_HOME='$XDG_CONFIG_HOME'
+    export XDG_DATA_HOME='$XDG_DATA_HOME'
+    export PANTALK_CONFIG='$PANTALK_CONFIG'
+    exec pantalkd --config '$PANTALK_CONFIG'
+" "$runtime_user" >>"$log_file" 2>&1 &
+
+echo "[ghost] pantalkd started"
