@@ -10,6 +10,7 @@ NATIVE_ARCH := $(shell uname -m | sed \
 PLATFORM ?= linux/$(NATIVE_ARCH)
 TARGETARCH ?= $(word 2,$(subst /, ,$(PLATFORM)))
 PANTALK_VERSION ?= 0.0.12
+DESKTOP_IMAGE ?= ghcr.io/pdparchitect/launcher-image-base-desktop:0.1.0
 AGENT_BROWSER_VERSION ?= 0.33.0
 GITHUB_COPILOT_VERSION ?= 1.0.75
 CODEX_VERSION ?= 0.145.0
@@ -53,15 +54,21 @@ help:
 	@echo "           VNC_STATS=true  (log KasmVNC encoder statistics)"
 
 check:
-	bash -n init.sh openbox/autostart kasm/patch.sh \
-		shell/agent-runtime-login \
-		shell/ghost-panel-status shell/ghost-harness \
-		shell/chromium shell/welcome \
+	bash -n \
+		overlay/etc/desktop/startup.d/05-agent-runtime-trust \
+		overlay/etc/desktop/startup.d/10-pantalk \
+		overlay/usr/local/bin/agent-runtime-login \
+		overlay/usr/local/bin/desktop-harness \
+		overlay/usr/local/bin/desktop-panel-status \
+		overlay/usr/local/bin/desktop-welcome \
+		overlay/usr/local/bin/kasm-mascot \
+		overlay/usr/local/bin/pantalk-greeting \
 		tests/test-agent-runtime-login.sh tests/test-ghost.sh \
 		tests/smoke-container.sh \
 		tools/size-report.sh
 	bash tests/test-agent-runtime-login.sh
 	bash tests/test-ghost.sh
+	@grep -q "^ARG DESKTOP_IMAGE=$(DESKTOP_IMAGE)$$" Dockerfile
 	@grep -q "^ARG PANTALK_VERSION=$(PANTALK_VERSION)$$" Dockerfile
 	@grep -q "^ARG AGENT_BROWSER_VERSION=$(AGENT_BROWSER_VERSION)$$" Dockerfile
 	@grep -q "^ARG GITHUB_COPILOT_VERSION=$(GITHUB_COPILOT_VERSION)$$" Dockerfile
@@ -69,12 +76,16 @@ check:
 	@grep -q "^ARG CHATBOTKIT_CLI_VERSION=$(CHATBOTKIT_CLI_VERSION)$$" Dockerfile
 	@grep -q "^ARG KIMI_CODE_VERSION=$(KIMI_CODE_VERSION)$$" Dockerfile
 	@grep -q "^ARG CLAUDE_CODE_VERSION=$(CLAUDE_CODE_VERSION)$$" Dockerfile
+	@grep -q 'RUN kasm-patch "Pantalk Ghost" && kasm-mascot' Dockerfile
+	@grep -q 'cd /workspace' overlay/etc/bash.bashrc.d/pantalk-prompt.sh
+	@grep -q 'GHOST_CODEX_SANDBOX_MODE' overlay/etc/desktop/startup.d/05-agent-runtime-trust
 	@echo "Ghost metadata, runtime login helper, and shell syntax are valid."
 
 build:
 	$(DOCKER) build \
 		--platform "$(PLATFORM)" \
 		--build-arg "TARGETARCH=$(TARGETARCH)" \
+		--build-arg "DESKTOP_IMAGE=$(DESKTOP_IMAGE)" \
 		--build-arg "PANTALK_VERSION=$(PANTALK_VERSION)" \
 		--build-arg "AGENT_BROWSER_VERSION=$(AGENT_BROWSER_VERSION)" \
 		--build-arg "GITHUB_COPILOT_VERSION=$(GITHUB_COPILOT_VERSION)" \
@@ -100,15 +111,15 @@ run:
 			--shm-size 1g \
 			$(GPU_DEVICE) \
 			--publish "$(BIND_ADDRESS):$(PORT):6901" \
-			--env "GHOST_RESOLUTION=$(RESOLUTION)" \
+			--env "DESKTOP_RESOLUTION=$(RESOLUTION)" \
 			--env "PANTALK_AUTOSTART=$(PANTALK_AUTOSTART)" \
-			--env "GHOST_VNC_STATS=$(VNC_STATS)" \
+			--env "DESKTOP_VNC_STATS=$(VNC_STATS)" \
 			--volume "$(VOLUME_PREFIX)-workspace:/workspace" \
-			--volume "$(VOLUME_PREFIX)-config:/home/ghost/.config/pantalk" \
-			--volume "$(VOLUME_PREFIX)-state:/home/ghost/.local/share/pantalk" \
-			--volume "$(VOLUME_PREFIX)-codex:/home/ghost/.codex" \
-			--volume "$(VOLUME_PREFIX)-claude:/home/ghost/.claude" \
-			--volume "$(VOLUME_PREFIX)-kimi:/home/ghost/.kimi" \
+			--volume "$(VOLUME_PREFIX)-config:/home/agent/.config/pantalk" \
+			--volume "$(VOLUME_PREFIX)-state:/home/agent/.local/share/pantalk" \
+			--volume "$(VOLUME_PREFIX)-codex:/home/agent/.codex" \
+			--volume "$(VOLUME_PREFIX)-claude:/home/agent/.claude" \
+			--volume "$(VOLUME_PREFIX)-kimi:/home/agent/.kimi" \
 			"$(IMAGE)"; \
 	fi
 	@$(MAKE) --no-print-directory url
@@ -154,7 +165,7 @@ logs:
 # container log, so the VNC_STATS encoder statistics only show up here.
 vnc-log:
 	$(DOCKER) exec "$(CONTAINER)" \
-		bash -c 'tail --lines=200 --follow /home/ghost/.vnc/*:1.log'
+		bash -c 'tail --lines=200 --follow /home/agent/.vnc/*:1.log'
 
 status:
 	@$(DOCKER) ps --all \

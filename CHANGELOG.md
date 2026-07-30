@@ -6,6 +6,49 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-30
+
+### Changed
+
+- Build on the published Launcher desktop base
+  (`ghcr.io/pdparchitect/launcher-image-base-desktop`) instead of assembling
+  Ubuntu, Node, KasmVNC, Openbox, and the browser here. That desktop was
+  originally ported *from* Ghost; now that several images share it, Ghost
+  consumes it rather than keeping a second copy of a stack it no longer owns
+  alone. The Dockerfile keeps only Pantalk and its agent runtimes, dropping
+  from 408 lines to 155.
+- **Breaking.** The desktop account is the base's `agent`, homed at
+  `/home/agent`. Volume targets move from `/home/ghost/...` to
+  `/home/agent/...`; an existing deployment must remount its volumes at the new
+  paths or start from a fresh set. The Launcher catalogue manifest and both
+  bundled Compose deployments are updated.
+- **Breaking.** `GHOST_RESOLUTION` and `GHOST_VNC_STATS` are replaced by the
+  base's `DESKTOP_RESOLUTION` and `DESKTOP_VNC_STATS`. Every other `GHOST_*`
+  and `PANTALK_*` variable is unchanged.
+- Declare ports the way the other Launcher desktops do: `6901` and the health
+  check are inherited from the base rather than redeclared.
+- Logs move from `/var/log/ghost` to the base's `/var/log/launcher-desktop`.
+- Product files are installed through `overlay/`, which is copied over the
+  base's defaults, rather than through per-file `COPY` instructions. The
+  entrypoint is the base's: Pantalk's starter config and daemon come up from
+  `/etc/desktop/startup.d/10-pantalk`, and the workspace seed moves to the
+  path the base already copies into `/workspace`.
+
+### Removed
+
+- The Openbox, Cortile, KasmVNC, GTK-theme, and browser-wrapper sources, along
+  with `init.sh`. All of them are the desktop base's now. Ghost's GTK theme,
+  Openbox theme, and panel config turned out to be byte-identical to the
+  base's, so only the wallpaper, favicon, landing page, root menu, and mascot
+  remain as branding.
+
+### Fixed
+
+- The KasmVNC mascot survives the move. The base's `kasm-patch` knows nothing
+  about it, so `kasm-mascot` injects it separately - after `kasm-patch`,
+  because both rewrite the same `<head>` - and it stays content-hash versioned
+  so browsers cannot serve a stale overlay against a fresh image.
+
 ## [0.0.10] - 2026-07-28
 
 ### Fixed

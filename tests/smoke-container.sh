@@ -46,7 +46,7 @@ fi
 "$docker" exec --detach \
     --user ghost \
     --env DISPLAY=:1 \
-    --env HOME=/home/ghost \
+    --env HOME=/home/agent \
     "$container" \
     chromium file:///opt/browser/index.html
 

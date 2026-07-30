@@ -1,0 +1,41 @@
+#!/bin/bash
+# Inject the Ghost mascot into the KasmVNC web client.
+#
+# The desktop base's `kasm-patch` strips upstream branding and injects
+# custom.css and the favicon. The mascot is this image's own addition, so it is
+# injected here rather than by adding a product concept to the base.
+#
+# Run after kasm-patch: that script rewrites the same <head>, and running this
+# first would have its output overwritten.
+#
+# The assets are served without cache-control, etag, or last-modified headers,
+# so a browser that has seen an earlier build will reuse its cached copy
+# forever. The query string is derived from the file contents, which makes the
+# URL change exactly when the asset does.
+
+set -euo pipefail
+
+www=/usr/share/kasmvnc/www
+mascot_css_version="$(sha256sum "$www/assets/mascot.css" | cut -c1-12)"
+mascot_js_version="$(sha256sum "$www/assets/mascot.js" | cut -c1-12)"
+
+# Idempotent: a second run with unchanged assets would otherwise inject the
+# same two tags again.
+if grep -Rq -F "assets/mascot.js?v=${mascot_js_version}" "$www"/*.html; then
+    echo "[kasm-mascot] already injected"
+    exit 0
+fi
+
+head_injection="<link rel=\"stylesheet\" href=\"./assets/mascot.css?v=${mascot_css_version}\">"
+head_injection+="<script defer src=\"./assets/mascot.js?v=${mascot_js_version}\"></script>"
+
+find "$www" -maxdepth 1 -name '*.html' -exec sed -i \
+    -e "s|</head>|${head_injection}</head>|" \
+    {} +
+
+if ! grep -Rq -F "assets/mascot.js?v=${mascot_js_version}" "$www"/*.html; then
+    echo "[kasm-mascot] the mascot overlay was not injected" >&2
+    exit 1
+fi
+
+echo "[kasm-mascot] injected the Ghost mascot"
