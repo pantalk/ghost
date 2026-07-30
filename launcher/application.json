@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.1",
+  "id": "370a2228-322d-4089-846b-62fb8c15d154",
+  "slug": "pantalk-ghost",
+  "name": "Pantalk Ghost",
+  "publisher": "Pantalk",
+  "description": "A secure local desktop environment for running and supervising AI agents through a familiar visual workspace.",
+  "tags": [
+    "COMMUNICATION",
+    "SECURE",
+    "DESKTOP"
+  ],
+  "media": {
+    "icon": "icon.svg",
+    "cover": "screenshot.png",
+    "screenshots": [
+      {
+        "source": "screenshot.png",
+        "alt": "Pantalk Ghost running as a persistent Linux agent computer in a browser"
+      }
+    ]
+  },
+  "viewer": "kasmvnc",
+  "containerPort": 6901,
+  "memory": "4g",
+  "sharedMemory": "1g",
+  "resolutionEnvironment": "DESKTOP_RESOLUTION",
+  "resolution": "1920x1080",
+  "environment": {
+    "PANTALK_AUTOSTART": "true"
+  },
+  "mounts": [
+    {
+      "name": "workspace",
+      "target": "/workspace"
+    },
+    {
+      "name": "private/pantalk-config",
+      "target": "/home/agent/.config/pantalk"
+    },
+    {
+      "name": "private/pantalk-state",
+      "target": "/home/agent/.local/share/pantalk"
+    },
+    {
+      "name": "private/codex",
+      "target": "/home/agent/.codex"
+    },
+    {
+      "name": "private/claude",
+      "target": "/home/agent/.claude"
+    },
+    {
+      "name": "private/kimi",
+      "target": "/home/agent/.kimi"
+    }
+  ]
+}
