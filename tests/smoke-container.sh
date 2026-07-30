@@ -16,7 +16,10 @@ fi
     for command in agent-runtime-login desktop-panel-status desktop-harness \
         pantalk pantalkd \
         agent-browser copilot cbk codex claude kimi chromium; do
-        command -v "$command" >/dev/null
+        command -v "$command" >/dev/null || {
+            echo "[smoke] FAILED: $command is not on PATH" >&2
+            exit 1
+        }
     done
 
     case "$(dpkg --print-architecture)" in

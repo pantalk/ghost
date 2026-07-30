@@ -79,6 +79,12 @@ check:
 	@grep -q 'RUN kasm-patch "Pantalk Ghost" && kasm-mascot' Dockerfile
 	@grep -q 'cd /workspace' overlay/etc/bash.bashrc.d/pantalk-prompt.sh
 	@grep -q 'GHOST_CODEX_SANDBOX_MODE' overlay/etc/desktop/startup.d/05-agent-runtime-trust
+	@test "$$(jq -er '.schemaVersion' launcher/application.json)" = 1
+	@test "$$(jq -er '.version' launcher/application.json)" = "$$(tr -d '[:space:]' < VERSION)"
+	@! jq -e 'has("image")' launcher/application.json >/dev/null
+	@for asset in $$(jq -er '.media.icon, .media.cover, .media.screenshots[].source' launcher/application.json); do \
+		test -f "launcher/$$asset"; \
+	done
 	@echo "Ghost metadata, runtime login helper, and shell syntax are valid."
 
 build:
