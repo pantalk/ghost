@@ -10,7 +10,7 @@ NATIVE_ARCH := $(shell uname -m | sed \
 PLATFORM ?= linux/$(NATIVE_ARCH)
 TARGETARCH ?= $(word 2,$(subst /, ,$(PLATFORM)))
 PANTALK_VERSION ?= 0.0.12
-DESKTOP_IMAGE ?= ghcr.io/pdparchitect/launcher-image-base-desktop:0.1.0
+DESKTOP_IMAGE ?= ghcr.io/pdparchitect/launcher-image-base-desktop:0.1.1
 AGENT_BROWSER_VERSION ?= 0.33.0
 GITHUB_COPILOT_VERSION ?= 1.0.75
 CODEX_VERSION ?= 0.145.0
@@ -19,7 +19,6 @@ KIMI_CODE_VERSION ?= 0.29.1
 CLAUDE_CODE_VERSION ?= 2.1.220
 BIND_ADDRESS ?= 127.0.0.1
 PORT ?= 6902
-RESOLUTION ?= 1920x1080
 PANTALK_AUTOSTART ?= true
 VNC_STATS ?= false
 VOLUME_PREFIX ?= pantalk-ghost
@@ -48,7 +47,7 @@ help:
 	@echo "  make url        Print the local browser URL"
 	@echo "  make size-report  Report the graphical stack's share of the image"
 	@echo
-	@echo "Overrides: PORT=8080 RESOLUTION=1600x900 PANTALK_VERSION=0.0.12"
+	@echo "Overrides: PORT=8080 PANTALK_VERSION=0.0.12"
 	@echo "           PLATFORM=linux/arm64 (default: $(PLATFORM))"
 	@echo "           PANTALK_AUTOSTART=false"
 	@echo "           VNC_STATS=true  (log KasmVNC encoder statistics)"
@@ -80,7 +79,6 @@ check:
 	@grep -q 'cd /workspace' overlay/etc/bash.bashrc.d/pantalk-prompt.sh
 	@grep -q 'GHOST_CODEX_SANDBOX_MODE' overlay/etc/desktop/startup.d/05-agent-runtime-trust
 	@test "$$(jq -er '.schemaVersion' launcher/application.json)" = 1
-	@test "$$(jq -er '.version' launcher/application.json)" = "$$(tr -d '[:space:]' < VERSION)"
 	@! jq -e 'has("image")' launcher/application.json >/dev/null
 	@for asset in $$(jq -er '.media.icon, .media.cover, .media.screenshots[].source' launcher/application.json); do \
 		test -f "launcher/$$asset"; \
@@ -117,7 +115,6 @@ run:
 			--shm-size 1g \
 			$(GPU_DEVICE) \
 			--publish "$(BIND_ADDRESS):$(PORT):6901" \
-			--env "DESKTOP_RESOLUTION=$(RESOLUTION)" \
 			--env "PANTALK_AUTOSTART=$(PANTALK_AUTOSTART)" \
 			--env "DESKTOP_VNC_STATS=$(VNC_STATS)" \
 			--volume "$(VOLUME_PREFIX)-workspace:/workspace" \

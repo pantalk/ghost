@@ -74,7 +74,6 @@ services:
     environment:
       PANTALK_AUTOSTART: 'true'
       PANTALK_CONFIG: /home/agent/.config/pantalk/config.yaml
-      DESKTOP_RESOLUTION: ${DESKTOP_RESOLUTION:-1920x1080}
     volumes:
       - ./.state/pantalk:/home/agent/.config/pantalk
       - ghost-state:/home/agent/.local/share/pantalk

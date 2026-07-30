@@ -107,10 +107,10 @@ The Makefile selects `linux/amd64` or `linux/arm64` from the host. Override it
 explicitly with `PLATFORM=linux/arm64 make up` when building for another
 architecture.
 
-Open <http://127.0.0.1:6902>. To select another port or initial resolution:
+Open <http://127.0.0.1:6902>. To select another port:
 
 ```bash
-PORT=8080 RESOLUTION=1600x900 make up
+PORT=8080 make up
 ```
 
 The default port binds only to `127.0.0.1`. Do not change `BIND_ADDRESS`
@@ -409,9 +409,9 @@ Three consequences are worth knowing:
 
 - The desktop user is `agent`, homed at `/home/agent`, and logs live in
   `/var/log/launcher-desktop`.
-- Desktop-level settings use the base's names — `DESKTOP_RESOLUTION`,
-  `DESKTOP_VNC_STATS`, `DESKTOP_TITLE`. Ghost- and Pantalk-level settings keep
-  their `GHOST_*` and `PANTALK_*` names.
+- Desktop-level settings use the base's names — `DESKTOP_VNC_STATS` and
+  `DESKTOP_TITLE`. Ghost- and Pantalk-level settings keep their `GHOST_*` and
+  `PANTALK_*` names.
 - The mascot is Ghost's own. The base's `kasm-patch` does not know about it, so
   `kasm-mascot` injects it separately after the base has branded the client.
 

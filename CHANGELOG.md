@@ -6,6 +6,24 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-07-30
+
+### Changed
+
+- Replace the single Launcher viewer and container port with the `desktop`
+  `kasmweb` interface required by application schema version 2.
+
+## [0.1.4] - 2026-07-30
+
+### Changed
+
+- Remove fixed desktop-resolution configuration from the Launcher manifest,
+  local Docker workflow, and bundled Compose deployments. KasmVNC now sizes
+  the remote desktop for the connected viewer.
+- Remove the unused product-version copy from the Launcher application
+  document. The root `VERSION` file remains authoritative.
+- Update the shared Launcher desktop base to `0.1.1`.
+
 ## [0.1.3] - 2026-07-30
 
 ### Fixed

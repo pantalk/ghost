@@ -99,9 +99,9 @@ ignored by Git. The `.state` parent directory is private; the nested secrets
 directory is mounted read-only so Mattermost's unprivileged user can read the
 password during provisioning.
 
-Edit `.env` to change image versions, bind addresses, ports, initial resource
-names, or the Ghost resolution. Run `make provision` after changing the
-Mattermost team or channel.
+Edit `.env` to change image versions, bind addresses, ports, or initial
+resource names. Run `make provision` after changing the Mattermost team or
+channel.
 
 Stop the deployment without deleting data:
 
