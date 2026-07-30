@@ -178,9 +178,9 @@ jobs:
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
       - name: Set up ORAS
-        uses: oras-project/setup-oras@v1
+        uses: oras-project/setup-oras@v2
         with:
-          version: 1.3.2
+          version: 1.3.3
 
       - name: Publish Launcher application
         shell: bash
