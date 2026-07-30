@@ -193,7 +193,9 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           declared="$(jq -er '.version' launcher/application.json)"
           test "$declared" = "$version"
-          archive=/tmp/launcher-application.zip
+          archive_directory="$(mktemp -d)"
+          archive_name=launcher-application.zip
+          archive="${archive_directory}/${archive_name}"
           (
             cd launcher
             find . -maxdepth 1 -type f -printf '%P\n' |
@@ -201,6 +203,7 @@ jobs:
               zip -X -q "$archive" -@
           )
           attachment="$(
+            cd "$archive_directory"
             oras attach \
               --artifact-type \
                 application/vnd.pdparchitect.launcher.application.v1 \
@@ -208,7 +211,7 @@ jobs:
                 "org.opencontainers.image.title=Pantalk Ghost Launcher application" \
               --format json \
               "${IMAGE}@${DIGEST}" \
-              "${archive}:application/vnd.pdparchitect.launcher.application.bundle.v1+zip"
+              "${archive_name}:application/vnd.pdparchitect.launcher.application.bundle.v1+zip"
           )"
           application_digest="$(jq -er '.digest' <<<"$attachment")"
           tags=("launcher-${version}")
