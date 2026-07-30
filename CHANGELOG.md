@@ -6,6 +6,13 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-07-30
+
+### Fixed
+
+- Pass the temporary Launcher application archive to ORAS by relative path so
+  its attachment path validation succeeds.
+
 ## [0.1.2] - 2026-07-30
 
 ### Fixed
