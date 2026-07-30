@@ -239,7 +239,7 @@ render_pantalk_config "$codex_token" "$claude_token"
 if [ -n "$(compose ps --status running --quiet ghost 2>/dev/null)" ]; then
   compose exec \
     -T \
-    --user ghost \
+    --user agent \
     --env XDG_RUNTIME_DIR=/run/user/1000 \
     ghost \
     pantalk reload >/dev/null
