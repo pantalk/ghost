@@ -30,10 +30,10 @@ legacy_names=(
     "#n""ode"
 )
 for legacy_name in "${legacy_names[@]}"; do
-    if rg --hidden --fixed-strings "$legacy_name" "$project_dir" \
-        --glob '!tests/test-ghost.sh' \
-        --glob '!**/*.ico' \
-        --glob '!**/*.png'; then
+    if grep --recursive --fixed-strings "$legacy_name" "$project_dir" \
+        --exclude='test-ghost.sh' \
+        --exclude='*.ico' \
+        --exclude='*.png'; then
         echo "Legacy product namespace remains: $legacy_name" >&2
         exit 1
     fi

@@ -95,9 +95,8 @@ make down
 ## Configuration and state
 
 The first `make up` copies `.env.example` to the ignored `.env` file. Edit it
-to change image versions, bind addresses, ports, the IRC channel, or the Ghost
-resolution. `make up` renders the Pantalk configuration under the ignored
-`.state` directory.
+to change image versions, bind addresses, ports, or the IRC channel. `make up`
+renders the Pantalk configuration under the ignored `.state` directory.
 
 Ergo stores its generated configuration, account data, registered channels,
 history, and TLS keys in the `ergo-data` Docker volume. Ghost keeps agent
