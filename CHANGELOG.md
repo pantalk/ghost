@@ -6,6 +6,13 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-30
+
+### Fixed
+
+- Install ORAS through its Node 24 setup action so the image-owned Launcher
+  application artifact can be attached and published successfully.
+
 ## [0.1.1] - 2026-07-30
 
 ### Changed
