@@ -10,7 +10,7 @@ NATIVE_ARCH := $(shell uname -m | sed \
 PLATFORM ?= linux/$(NATIVE_ARCH)
 TARGETARCH ?= $(word 2,$(subst /, ,$(PLATFORM)))
 PANTALK_VERSION ?= 0.0.12
-DESKTOP_IMAGE ?= ghcr.io/pdparchitect/launcher-image-base-desktop:0.1.1
+DESKTOP_IMAGE ?= ghcr.io/pdparchitect/launcher-image-base-desktop:0.1.2
 AGENT_BROWSER_VERSION ?= 0.33.0
 GITHUB_COPILOT_VERSION ?= 1.0.75
 CODEX_VERSION ?= 0.145.0
@@ -80,6 +80,7 @@ check:
 	@grep -q 'GHOST_CODEX_SANDBOX_MODE' overlay/etc/desktop/startup.d/05-agent-runtime-trust
 	@test "$$(jq -er '.schemaVersion' launcher/application.json)" = 2
 	@! jq -e 'has("image")' launcher/application.json >/dev/null
+	@jq -e '.interfaces.preview.kind == "preview" and .interfaces.preview.port == 6902 and .interfaces.preview.path == "/preview.jpg"' launcher/application.json >/dev/null
 	@for asset in $$(jq -er '.media.icon, .media.cover, .media.screenshots[].source' launcher/application.json); do \
 		test -f "launcher/$$asset"; \
 	done
