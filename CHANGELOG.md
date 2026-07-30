@@ -6,6 +6,17 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-07-30
+
+### Added
+
+- Expose the shared desktop screenshot endpoint as the Launcher `preview`
+  interface.
+
+### Changed
+
+- Update the shared Launcher desktop base to `0.1.2`.
+
 ## [0.1.5] - 2026-07-30
 
 ### Changed
