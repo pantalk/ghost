@@ -1,0 +1,150 @@
+# Pantalk Ghost - Arc Openbox theme recoloured to the pantalk.dev palette.
+#
+# The exact dark-theme tokens are declared in site/styles/global.css:
+#
+#   #080A0C  background             #24DBC9  accent
+#   #0F1215  background-secondary   #50E2D4  accent-secondary
+#   #151A1E  background-tertiary    #FFFFFF  content
+#   #1D2126  background-quaternary  #818C98  content-secondary
+#   #282E33  stroke                 #202427  stroke-secondary
+#
+# Arc Openbox theme
+# Copyright (C) 2015 Dino Duratović <dinomol at mail dot com>
+#
+# Inspired by and made for horst3180's Arc GTK theme
+# https://github.com/horst3180/Arc-theme
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+### WINDOW
+border.width: 1
+
+# Preserve the shared desktop's generous resize target while replacing the
+# generic black frame with Pantalk's page background.
+window.client.padding.width: 6
+window.client.padding.height: 6
+window.handle.width: 0
+
+padding.width: 6
+padding.height: 5
+
+window.active.border.color: #24DBC9
+window.inactive.border.color: #080A0C
+window.active.title.separator.color: #282E33
+window.inactive.title.separator.color: #202427
+window.active.client.color: #080A0C
+window.inactive.client.color: #080A0C
+
+window.active.label.text.color: #FFFFFF
+window.inactive.label.text.color: #818C98
+
+window.active.button.unpressed.image.color: #FFFFFF
+window.active.button.pressed.image.color: #24DBC9
+window.active.button.disabled.image.color: #282E33
+window.active.button.hover.image.color: #50E2D4
+window.active.button.toggled.unpressed.image.color: #FFFFFF
+window.active.button.toggled.pressed.image.color: #24DBC9
+window.active.button.toggled.hover.image.color: #50E2D4
+window.inactive.button.unpressed.image.color: #818C98
+window.inactive.button.pressed.image.color: #24DBC9
+window.inactive.button.disabled.image.color: #282E33
+window.inactive.button.hover.image.color: #50E2D4
+window.inactive.button.toggled.unpressed.image.color: #818C98
+window.inactive.button.toggled.pressed.image.color: #24DBC9
+window.inactive.button.toggled.hover.image.color: #50E2D4
+
+window.active.title.bg: flat solid
+window.active.title.bg.color: #151A1E
+window.active.label.bg: flat solid
+window.active.label.bg.color: #151A1E
+window.active.handle.bg: flat solid
+window.active.handle.bg.color: #151A1E
+window.active.grip.bg: flat solid
+window.active.grip.bg.color: #151A1E
+window.inactive.title.bg: flat solid
+window.inactive.title.bg.color: #0F1215
+window.inactive.label.bg: flat solid
+window.inactive.label.bg.color: #0F1215
+window.inactive.handle.bg: flat solid
+window.inactive.handle.bg.color: #0F1215
+window.inactive.grip.bg: flat solid
+window.inactive.grip.bg.color: #0F1215
+
+window.active.button.unpressed.bg: parentrelative
+window.active.button.pressed.bg: parentrelative
+window.active.button.hover.bg: parentrelative
+window.active.button.disabled.bg: parentrelative
+window.active.button.toggled.unpressed.bg: parentrelative
+window.active.button.toggled.pressed.bg: parentrelative
+window.active.button.toggled.hover.bg: parentrelative
+window.inactive.button.unpressed.bg: parentrelative
+window.inactive.button.pressed.bg: parentrelative
+window.inactive.button.hover.bg: parentrelative
+window.inactive.button.disabled.bg: parentrelative
+window.inactive.button.toggled.unpressed.bg: parentrelative
+window.inactive.button.toggled.pressed.bg: parentrelative
+window.inactive.button.toggled.hover.bg: parentrelative
+
+window.label.text.justify: center
+
+#window.active.label.text.font: text shadow
+#window.inactive.label.text.font: text shadow
+
+### MENU
+menu.border.width: 1
+menu.separator.width: 1
+menu.separator.padding.width: 6
+menu.separator.padding.height: 4
+
+menu.overlap.x: 0
+menu.overlap.y: 0
+
+menu.border.color: #24DBC9
+menu.separator.color: #282E33
+
+menu.title.text.color: #FFFFFF
+menu.items.text.color: #818C98
+menu.items.disabled.text.color: #282E33
+menu.items.active.text.color: #080A0C
+menu.items.active.disabled.text.color: #202427
+
+menu.items.bg: flat solid
+menu.items.bg.color: #080A0C
+menu.items.active.bg: flat solid
+menu.items.active.bg.color: #24DBC9
+menu.title.bg: flat solid
+menu.title.bg.color: #0F1215
+
+menu.title.text.justify: center
+
+#menu.items.font: text shadow
+#menu.title.text.font: text shadow
+
+### OSD
+osd.border.width: 1
+
+osd.border.color: #282E33
+
+osd.label.text.color: #FFFFFF
+
+osd.bg: flat solid
+osd.bg.color: #080A0C
+osd.label.bg: flat solid
+osd.label.bg.color: #080A0C
+osd.hilight.bg: flat solid
+osd.hilight.bg.color: #24DBC9
+osd.unhilight.bg: flat solid
+osd.unhilight.bg.color: #151A1E
+
+#osd.label.text.font: text shadow

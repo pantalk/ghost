@@ -4,7 +4,7 @@
 set -euo pipefail
 
 if pgrep -u "$(id -u)" -x pantalkd >/dev/null 2>&1; then
-    printf '<span foreground="#5fd787">●</span> running\n'
+    printf '<span foreground="#24DBC9">●</span> running\n'
 else
-    printf '<span foreground="#ffaf00">●</span> stopped\n'
+    printf '<span foreground="#818C98">●</span> stopped\n'
 fi

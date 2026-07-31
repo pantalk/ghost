@@ -9,8 +9,8 @@
 clear
 
 # ANSI color codes (using $'...' so \e is interpreted).
-C=$'\e[38;2;255;255;255m'
-D=$'\e[38;5;243m'
+C=$'\e[38;2;36;219;201m'
+D=$'\e[38;2;129;140;152m'
 B=$'\e[1m'
 R=$'\e[0m'
 
@@ -38,4 +38,3 @@ ${D}    1. Right-click the desktop and open Setup.
     In Ranger, press 'W for Workspace or 'H for Home.${R}
 
 EOF
-

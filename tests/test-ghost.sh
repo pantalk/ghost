@@ -75,7 +75,8 @@ grep -Fxq 'custom workspace instructions' "$workspace_test_dir/AGENT.md"
 
 # The browser landing page.
 landing="$overlay_dir/opt/browser/index.html"
-grep -Fq 'background: #000;' "$landing"
+grep -Fq 'background: #080A0C;' "$landing"
+grep -Fq 'color: #24DBC9;' "$landing"
 grep -Fq '░       ░░░░      ░░░' "$landing"
 if grep -Fq 'Welcome to Pantalk Ghost' "$landing"; then
     echo "The obsolete browser welcome card is still present." >&2
@@ -203,6 +204,25 @@ grep -Fq 'panel_items = PTSEC' "$overlay_dir/etc/xdg/tint2/tint2rc"
 grep -Fq 'execp_command = desktop-panel-status' \
     "$overlay_dir/etc/xdg/tint2/tint2rc"
 test -s "$overlay_dir/usr/share/kasmvnc/www/assets/favicon.svg"
+
+# Product images own their visual palette through overlay drop-ins. Keep the
+# panel, Openbox chrome, terminal, browser landing page, and KasmVNC surround
+# on the same canonical tokens as pantalk.dev rather than falling back to the
+# desktop base's generic black, white, and crimson theme.
+panel_theme="$overlay_dir/etc/xdg/tint2/tint2rc"
+openbox_theme="$overlay_dir/usr/share/themes/Desktop/openbox-3/themerc"
+terminal_theme="$overlay_dir/etc/xdg/kitty/theme.conf"
+test -s "$openbox_theme"
+test -s "$terminal_theme"
+grep -Fq 'background_color = #0F1215 100' "$panel_theme"
+grep -Fq 'border_color = #24DBC9 45' "$panel_theme"
+grep -Fq 'window.active.border.color: #24DBC9' "$openbox_theme"
+grep -Fq 'window.active.title.bg.color: #151A1E' "$openbox_theme"
+grep -Fq 'background            #080A0C' "$terminal_theme"
+grep -Fq 'cursor                #24DBC9' "$terminal_theme"
+grep -Fq 'color46 #24DBC9' "$terminal_theme"
+grep -Fq 'background-color: #080A0C !important;' \
+    "$overlay_dir/usr/share/kasmvnc/www/assets/mascot.css"
 
 # The wallpaper drop-in the base resolves at session start. It must contain no
 # XML comment: the imlib2 loader feh uses rejects any SVG with one, and the

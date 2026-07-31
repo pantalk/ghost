@@ -225,9 +225,9 @@ selected harness continues to own reasoning, tools, permissions, model access,
 and execution.
 
 Underneath, Ghost is a deliberately small fork of the original CBK sandbox
-desktop: an Openbox environment, Tint2 panel, Triste-Crimson theme, Kitty
-terminal, and on-demand Cortile tiling. The browser UI is a KasmVNC view of that
-real Linux desktop, which lets both the operator and the harness use the same
+desktop: an Openbox environment, Tint2 panel, Pantalk theme, Kitty terminal,
+and on-demand Cortile tiling. The browser UI is a KasmVNC view of that real
+Linux desktop, which lets both the operator and the harness use the same
 browser, terminal, filesystem, and display.
 
 ### What the image includes
@@ -414,6 +414,22 @@ browser rather than the remote desktop, so it costs the session nothing; only
 the ghost itself takes clicks, and the rest of that corner still belongs to the
 desktop underneath.
 
+The wallpaper, KasmVNC surround, Openbox chrome and menus, Tint2 panel, browser
+landing page, and Kitty terminal all use the Pantalk site's dark-theme tokens:
+
+| Site token | Value | Desktop use |
+| --- | --- | --- |
+| `background` | `#080A0C` | wallpaper, terminal, menus, and browser ground |
+| `background-secondary` | `#0F1215` | panel and inactive window chrome |
+| `background-tertiary` / `background-quaternary` | `#151A1E` / `#1D2126` | active and hovered surfaces |
+| `stroke` / `stroke-secondary` | `#282E33` / `#202427` | separators and inactive outlines |
+| `accent` / `accent-secondary` | `#24DBC9` / `#50E2D4` | focus, selection, cursor, links, and hover |
+| `content` / `content-secondary` | `#FFFFFF` / `#818C98` | primary and muted text |
+
+The terminal's red, yellow, blue, and magenta ANSI channels are muted
+supporting colours because the Pantalk site intentionally defines only teal
+accents. They remain semantic terminal colours rather than desktop accents.
+
 ## Relationship to the Launcher desktop base
 
 Ghost is a product image on top of
@@ -422,14 +438,14 @@ ported *from* this desktop; now that several images share it, Ghost consumes it
 rather than keeping a second copy of a stack it no longer owns alone. The base
 supplies Ubuntu, Node, KasmVNC, Openbox, Cortile, tint2, kitty, the browser, the
 GTK theme, the `agent` account, and the entrypoint. This repository supplies
-Pantalk.
+Pantalk and overlays its site palette onto those shared desktop components.
 
 That split is what the source layout reflects:
 
 | Path                             | What it is                                      |
 | -------------------------------- | ----------------------------------------------- |
 | `Dockerfile`                     | Pantalk and the agent runtimes                   |
-| `overlay/`                       | Files copied over the base's defaults            |
+| `overlay/`                       | Pantalk files and themed base overrides           |
 | `overlay/etc/desktop/startup.d/` | Programs the entrypoint runs before the session  |
 | `deployments/`                   | Compose recipes; not part of the image           |
 

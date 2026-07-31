@@ -12,7 +12,7 @@
       height="60"
       patternUnits="userSpaceOnUse"
     >
-      <path d="M60 0H0V60" stroke="#293039" stroke-opacity="0.3" />
+      <path d="M60 0H0V60" stroke="#282E33" stroke-opacity="0.3" />
     </pattern>
     <radialGradient
       id="hero-glow"
