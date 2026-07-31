@@ -4,10 +4,26 @@
 
 ## Quick start
 
-Ghost publishes native AMD64 and ARM64 images. Choose the container runtime
-installed on your host.
+### Launcher (recommended)
 
-### Docker
+The easiest way to run Ghost is with
+[Launcher](https://github.com/pdparchitect/launcher). Launcher discovers,
+installs, starts, stops, and updates Ghost while managing its container, ports,
+and persistent storage for you.
+
+1. [Download the latest Launcher release](https://github.com/pdparchitect/launcher/releases/latest).
+2. Open **Marketplace**, select **Pantalk Ghost**, and install it.
+3. Choose **Open agent** when installation finishes, then open **Setup** from
+   the desktop menu to sign in to a harness.
+
+Launcher uses Apple `container` on macOS and Docker on Linux.
+
+### Run the container manually
+
+Ghost also publishes native AMD64 and ARM64 images. Choose the container
+runtime installed on your host.
+
+#### Docker
 
 ```bash
 docker run --detach \
@@ -17,7 +33,7 @@ docker run --detach \
   ghcr.io/pantalk/ghost:latest
 ```
 
-### Podman
+#### Podman
 
 ```bash
 podman run --detach \
@@ -27,7 +43,7 @@ podman run --detach \
   ghcr.io/pantalk/ghost:latest
 ```
 
-### Apple container
+#### Apple container
 
 Apple's [`container`](https://github.com/apple/container) tool requires Apple
 silicon and macOS 26 or later. Start its service once, then run Ghost with
