@@ -6,6 +6,21 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+### Changed
+
+- Use port `6901` for the interactive desktop in local runs, documentation,
+  continuous integration, and bundled deployments. Port `6902` remains the
+  separate Launcher preview interface.
+- Align the local workflow with the shared Launcher images: `make run` now
+  builds before recreating the container, uses the same `RUN_PORT` and
+  `RUN_PREVIEW_PORT` overrides, and publishes the preview on port `6902`.
+
+### Fixed
+
+- Migrate the persisted Pantalk media directory from the legacy `/home/ghost`
+  home to `/home/agent` without replacing other user configuration, retaining
+  the original configuration as a one-time backup.
+
 ## [0.1.7] - 2026-07-31
 
 ### Fixed

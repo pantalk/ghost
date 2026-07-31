@@ -18,7 +18,8 @@ CHATBOTKIT_CLI_VERSION ?= 1.38.0
 KIMI_CODE_VERSION ?= 0.29.1
 CLAUDE_CODE_VERSION ?= 2.1.220
 BIND_ADDRESS ?= 127.0.0.1
-PORT ?= 6902
+RUN_PORT ?= 6901
+RUN_PREVIEW_PORT ?= 6902
 PANTALK_AUTOSTART ?= true
 VNC_STATS ?= false
 VOLUME_PREFIX ?= pantalk-ghost
@@ -28,26 +29,27 @@ VOLUME_PREFIX ?= pantalk-ghost
 GPU_DEVICE := $(shell for node in /dev/dri/renderD*; do \
 	[ -e "$$node" ] && echo "--device=$$node"; done)
 
-.PHONY: help check build run recreate up test smoke stop logs vnc-log status url size-report
+.PHONY: help check build run recreate up start test smoke stop logs vnc-log status url size-report
 
 help:
 	@echo "Pantalk Ghost local Docker workflow"
 	@echo
 	@echo "  make check      Validate scripts, tests, and pinned metadata"
 	@echo "  make build      Build $(IMAGE)"
-	@echo "  make run        Start or create the Ghost container"
+	@echo "  make run        Build and recreate the Ghost container"
 	@echo "  make recreate   Recreate the container without rebuilding"
-	@echo "  make up         Build and recreate the container"
-	@echo "  make test       Build, run, and smoke-test the browser endpoint"
-	@echo "  make smoke      Test the running browser endpoint"
+	@echo "  make up         Alias for make run"
+	@echo "  make test       Build, run, and smoke-test both browser endpoints"
+	@echo "  make smoke      Test the running browser endpoints"
 	@echo "  make logs       Follow container logs"
 	@echo "  make vnc-log    Follow the KasmVNC session log (encoder statistics)"
 	@echo "  make status     Show container and health status"
 	@echo "  make stop       Stop and remove the container"
-	@echo "  make url        Print the local browser URL"
+	@echo "  make url        Print the desktop and preview URLs"
 	@echo "  make size-report  Report the graphical stack's share of the image"
 	@echo
-	@echo "Overrides: PORT=8080 PANTALK_VERSION=0.0.12"
+	@echo "Overrides: RUN_PORT=8080 RUN_PREVIEW_PORT=8081"
+	@echo "           PANTALK_VERSION=0.0.12"
 	@echo "           PLATFORM=linux/arm64 (default: $(PLATFORM))"
 	@echo "           PANTALK_AUTOSTART=false"
 	@echo "           VNC_STATS=true  (log KasmVNC encoder statistics)"
@@ -101,7 +103,16 @@ build:
 		--tag "$(IMAGE)" \
 		.
 
-run:
+run: build
+	@$(MAKE) --no-print-directory recreate
+
+recreate:
+	@$(MAKE) --no-print-directory stop
+	@$(MAKE) --no-print-directory start
+
+up: run
+
+start:
 	@if $(DOCKER) container inspect "$(CONTAINER)" >/dev/null 2>&1; then \
 		if [ "$$($(DOCKER) container inspect --format '{{.State.Running}}' "$(CONTAINER)")" = "true" ]; then \
 			echo "Container $(CONTAINER) is already running."; \
@@ -115,7 +126,8 @@ run:
 			--restart unless-stopped \
 			--shm-size 1g \
 			$(GPU_DEVICE) \
-			--publish "$(BIND_ADDRESS):$(PORT):6901" \
+			--publish "$(BIND_ADDRESS):$(RUN_PORT):6901" \
+			--publish "$(BIND_ADDRESS):$(RUN_PREVIEW_PORT):6902" \
 			--env "PANTALK_AUTOSTART=$(PANTALK_AUTOSTART)" \
 			--env "DESKTOP_VNC_STATS=$(VNC_STATS)" \
 			--volume "$(VOLUME_PREFIX)-workspace:/workspace" \
@@ -128,19 +140,14 @@ run:
 	fi
 	@$(MAKE) --no-print-directory url
 
-recreate:
-	@$(MAKE) --no-print-directory stop
-	@$(MAKE) --no-print-directory run
-
-up: build recreate
-
 test: check up smoke
 
 smoke:
-	@echo "Waiting for Ghost at http://$(BIND_ADDRESS):$(PORT) ..."
+	@echo "Waiting for Ghost at http://$(BIND_ADDRESS):$(RUN_PORT) ..."
 	@ready=false; \
 	for attempt in $$(seq 1 30); do \
-		if curl --fail --silent "http://$(BIND_ADDRESS):$(PORT)/index.html" >/dev/null; then \
+		if curl --fail --silent "http://$(BIND_ADDRESS):$(RUN_PORT)/index.html" >/dev/null && \
+			curl --fail --silent "http://$(BIND_ADDRESS):$(RUN_PREVIEW_PORT)/preview.jpg" >/dev/null; then \
 			ready=true; \
 			break; \
 		fi; \
@@ -153,7 +160,7 @@ smoke:
 	fi; \
 	DOCKER="$(DOCKER)" bash tests/smoke-container.sh \
 		"$(CONTAINER)" "$(TARGETARCH)"; \
-	echo "Pantalk Ghost is ready and transport-neutral: http://$(BIND_ADDRESS):$(PORT)"
+	echo "Pantalk Ghost is ready and transport-neutral: http://$(BIND_ADDRESS):$(RUN_PORT)"
 
 stop:
 	@if $(DOCKER) container inspect "$(CONTAINER)" >/dev/null 2>&1; then \
@@ -177,7 +184,8 @@ status:
 		--format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
 
 url:
-	@echo "Open http://$(BIND_ADDRESS):$(PORT)"
+	@echo "Desktop: http://$(BIND_ADDRESS):$(RUN_PORT)"
+	@echo "Preview: http://$(BIND_ADDRESS):$(RUN_PREVIEW_PORT)/preview.jpg"
 
 size-report:
 	@DOCKER="$(DOCKER)" bash tools/size-report.sh "$(IMAGE)"

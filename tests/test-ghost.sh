@@ -92,6 +92,36 @@ grep -Fq 'ghost-kimi:/home/agent/.kimi' \
 grep -Fq 'ghost-kimi:/home/agent/.kimi' \
     "$project_dir/deployments/mattermost/compose.yaml"
 
+# The local workflow follows the shared Launcher image workflow: run builds the
+# image, the interactive desktop uses 6901, and the preview uses 6902.
+grep -Fq 'RUN_PORT ?= 6901' "$project_dir/Makefile"
+grep -Fq 'RUN_PREVIEW_PORT ?= 6902' "$project_dir/Makefile"
+grep -Fq 'run: build' "$project_dir/Makefile"
+grep -Fq -- '--publish "$(BIND_ADDRESS):$(RUN_PORT):6901"' \
+    "$project_dir/Makefile"
+grep -Fq -- '--publish "$(BIND_ADDRESS):$(RUN_PREVIEW_PORT):6902"' \
+    "$project_dir/Makefile"
+grep -Fq -- '--publish 127.0.0.1:6901:6901' "$project_dir/README.md"
+grep -Fq -- '--publish 127.0.0.1:6902:6902' "$project_dir/README.md"
+grep -Fq 'RUN_PORT=8080 RUN_PREVIEW_PORT=8081 make run' \
+    "$project_dir/README.md"
+for deployment in ergo mattermost; do
+    grep -Fq 'GHOST_PORT=6901' \
+        "$project_dir/deployments/$deployment/.env.example"
+    grep -Fq 'GHOST_PREVIEW_PORT=6902' \
+        "$project_dir/deployments/$deployment/.env.example"
+    grep -Fq '${GHOST_PORT:-6901}:6901' \
+        "$project_dir/deployments/$deployment/compose.yaml"
+    grep -Fq '${GHOST_PREVIEW_PORT:-6902}:6902' \
+        "$project_dir/deployments/$deployment/compose.yaml"
+done
+if grep --recursive --fixed-strings '6902:6901' "$project_dir" \
+    --exclude='test-ghost.sh' \
+    --exclude='CHANGELOG.md'; then
+    echo "The desktop is still mapped through the preview port." >&2
+    exit 1
+fi
+
 # The desktop harness and the chat-side agents must agree about the workspace:
 # both work there unattended, so neither should sit on a trust prompt.
 trust="$overlay_dir/etc/desktop/startup.d/05-agent-runtime-trust"
@@ -119,6 +149,42 @@ grep -Fq 'PANTALK_AUTOSTART' "$pantalk_hook"
 grep -Fq 'exec pantalkd --config' "$pantalk_hook"
 grep -Fq 'setsid su' "$pantalk_hook"
 grep -Fq 'created starter Pantalk configuration' "$pantalk_hook"
+
+# Config volumes survive image upgrades. A config seeded by an older Ghost
+# image must retain the user's settings while its obsolete home path moves to
+# the runtime home used by the current image.
+legacy_config="$overlay_test_dir/pantalk/config.yaml"
+mkdir -p "$(dirname "$legacy_config")"
+cat > "$legacy_config" <<'EOF'
+server:
+  notification_history_size: 321
+  media:
+    backend: fs
+    path: /home/ghost/.local/share/pantalk/media
+custom_setting: retained
+EOF
+
+DESKTOP_RUNTIME_USER="$(id -un)" \
+    PANTALK_CONFIG="$legacy_config" \
+    PANTALK_AUTOSTART=false \
+    "$pantalk_hook" >/dev/null
+
+test "$(yq -r '.server.media.path' "$legacy_config")" = \
+    '/home/agent/.local/share/pantalk/media'
+test "$(yq -r '.server.notification_history_size' "$legacy_config")" = 321
+test "$(yq -r '.custom_setting' "$legacy_config")" = retained
+legacy_backup="${legacy_config}.ghost-home.bak"
+test -s "$legacy_backup"
+test "$(yq -r '.server.media.path' "$legacy_backup")" = \
+    '/home/ghost/.local/share/pantalk/media'
+
+# A second startup is a no-op and must not replace the original backup.
+backup_checksum="$(sha256sum "$legacy_backup")"
+DESKTOP_RUNTIME_USER="$(id -un)" \
+    PANTALK_CONFIG="$legacy_config" \
+    PANTALK_AUTOSTART=false \
+    "$pantalk_hook" >/dev/null
+test "$(sha256sum "$legacy_backup")" = "$backup_checksum"
 
 # Terminals start in the workspace. Openbox chdirs to $HOME at startup whatever
 # directory it was started from, so this cannot be set for the session and has

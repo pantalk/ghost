@@ -110,12 +110,14 @@ jobs:
             --name "$container" \
             --platform "$PLATFORM" \
             --shm-size 1g \
-            --publish 127.0.0.1:6902:6901 \
+            --publish 127.0.0.1:6901:6901 \
+            --publish 127.0.0.1:6902:6902 \
             "$IMAGE"
 
           ready=false
           for attempt in $(seq 1 60); do
-            if curl --fail --silent http://127.0.0.1:6902/index.html >/dev/null; then
+            if curl --fail --silent http://127.0.0.1:6901/index.html >/dev/null && \
+              curl --fail --silent http://127.0.0.1:6902/preview.jpg >/dev/null; then
               ready=true
               break
             fi
