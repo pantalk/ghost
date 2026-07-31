@@ -6,6 +6,13 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-07-31
+
+### Fixed
+
+- Update to Launcher desktop substrate `0.1.8` so `notify-send` reaches native
+  notifications from agents and root container shells.
+
 ## [0.1.11] - 2026-07-31
 
 ### Added

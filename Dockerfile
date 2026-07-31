@@ -19,7 +19,7 @@
 #     pantalk/ghost:local
 #   Open http://localhost:6901
 
-ARG DESKTOP_IMAGE=ghcr.io/pdparchitect/launcher-image-base-desktop:0.1.7
+ARG DESKTOP_IMAGE=ghcr.io/pdparchitect/launcher-image-base-desktop:0.1.8
 FROM ${DESKTOP_IMAGE}
 
 USER root
