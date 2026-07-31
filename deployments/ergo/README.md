@@ -32,7 +32,8 @@ make up
 Open:
 
 - The Lounge: <http://127.0.0.1:9000>
-- Ghost: <http://127.0.0.1:6902>
+- Ghost: <http://127.0.0.1:6901>
+- Ghost preview: <http://127.0.0.1:6902/preview.jpg>
 
 The Lounge runs in public mode and does not require a login. Its connection
 screen is locked to the local Ergo server and joins `#ghost` automatically.

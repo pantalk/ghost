@@ -36,7 +36,8 @@ bots, and then starts Ghost.
 Open:
 
 - Mattermost: <http://127.0.0.1:8065>
-- Ghost: <http://127.0.0.1:6902>
+- Ghost: <http://127.0.0.1:6901>
+- Ghost preview: <http://127.0.0.1:6902/preview.jpg>
 
 Show the generated Mattermost administrator login:
 

@@ -55,7 +55,8 @@ services:
       ergo:
         condition: service_healthy
     ports:
-      - ${GHOST_BIND_ADDRESS:-127.0.0.1}:${GHOST_PORT:-6902}:6901
+      - ${GHOST_BIND_ADDRESS:-127.0.0.1}:${GHOST_PORT:-6901}:6901
+      - ${GHOST_BIND_ADDRESS:-127.0.0.1}:${GHOST_PREVIEW_PORT:-6902}:6902
     environment:
       PANTALK_AUTOSTART: 'true'
       PANTALK_CONFIG: /home/agent/.config/pantalk/config.yaml

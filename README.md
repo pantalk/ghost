@@ -29,7 +29,8 @@ runtime installed on your host.
 docker run --detach \
   --name pantalk-ghost \
   --shm-size 1g \
-  --publish 127.0.0.1:6902:6901 \
+  --publish 127.0.0.1:6901:6901 \
+  --publish 127.0.0.1:6902:6902 \
   ghcr.io/pantalk/ghost:latest
 ```
 
@@ -39,7 +40,8 @@ docker run --detach \
 podman run --detach \
   --name pantalk-ghost \
   --shm-size 1g \
-  --publish 127.0.0.1:6902:6901 \
+  --publish 127.0.0.1:6901:6901 \
+  --publish 127.0.0.1:6902:6902 \
   ghcr.io/pantalk/ghost:latest
 ```
 
@@ -56,7 +58,8 @@ container run --detach \
   --name pantalk-ghost \
   --memory 4g \
   --shm-size 1g \
-  --publish 127.0.0.1:6902:6901 \
+  --publish 127.0.0.1:6901:6901 \
+  --publish 127.0.0.1:6902:6902 \
   ghcr.io/pantalk/ghost:latest
 ```
 
@@ -65,9 +68,11 @@ detects those mounts, it runs as root inside that container's isolated Linux VM
 so its workspace and configuration remain writable. Named volumes and
 ownership-mutable Docker or Podman storage continue to run as `ghost`.
 
-Open <http://127.0.0.1:6902>. This is the Ghost computer itself, presented
+Open <http://127.0.0.1:6901>. This is the Ghost computer itself, presented
 through KasmVNC rather than a separate dashboard. Open **Setup** from the
 desktop menu and sign in to Codex, Claude Code, or Kimi Code.
+The separate current-desktop preview is available at
+<http://127.0.0.1:6902/preview.jpg>.
 
 The standalone image starts with Pantalk's local connector. To connect the
 authenticated harness to a real chat system, use one of the
@@ -88,7 +93,8 @@ docker run --detach \
   --name pantalk-ghost \
   --restart unless-stopped \
   --shm-size 1g \
-  --publish 127.0.0.1:6902:6901 \
+  --publish 127.0.0.1:6901:6901 \
+  --publish 127.0.0.1:6902:6902 \
   --volume pantalk-ghost-workspace:/workspace \
   --volume pantalk-ghost-config:/home/agent/.config/pantalk \
   --volume pantalk-ghost-state:/home/agent/.local/share/pantalk \
@@ -116,18 +122,23 @@ lifecycle.
 From this directory, build and start the local image:
 
 ```bash
-make up
+make run
 ```
 
 The Makefile selects `linux/amd64` or `linux/arm64` from the host. Override it
-explicitly with `PLATFORM=linux/arm64 make up` when building for another
+explicitly with `PLATFORM=linux/arm64 make run` when building for another
 architecture.
 
-Open <http://127.0.0.1:6902>. To select another port:
+Open <http://127.0.0.1:6901>. The current desktop preview is available at
+<http://127.0.0.1:6902/preview.jpg>. To select other ports:
 
 ```bash
-PORT=8080 make up
+RUN_PORT=8080 RUN_PREVIEW_PORT=8081 make run
 ```
+
+Like the shared Launcher image workflow, `make run` builds before recreating
+the container. Use `make recreate` to skip the build, or `make up` as an alias
+for `make run`.
 
 The default port binds only to `127.0.0.1`. Do not change `BIND_ADDRESS`
 unless the no-password environment is intentionally being exposed.
@@ -299,7 +310,8 @@ Ghost deliberately assumes a trusted local environment:
   of implying a boundary that does not exist. The boundary is the container.
   Override with `GHOST_CODEX_SANDBOX_MODE`, or set it empty to omit the setting.
 
-Do not publish port 6901 or change `BIND_ADDRESS` on an untrusted host.
+Do not publish ports 6901 or 6902 or change `BIND_ADDRESS` on an untrusted
+host.
 
 ### Authentication is delegated by design
 
@@ -434,7 +446,7 @@ Three consequences are worth knowing:
 To build against a different base, override `DESKTOP_IMAGE`:
 
 ```bash
-make up DESKTOP_IMAGE=ghcr.io/pdparchitect/launcher-image-base-desktop:0.2.0
+make run DESKTOP_IMAGE=ghcr.io/pdparchitect/launcher-image-base-desktop:0.2.0
 ```
 
 ## Pinned components

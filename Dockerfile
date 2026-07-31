@@ -15,8 +15,9 @@
 # Local use:
 #   docker build -t pantalk/ghost:local .
 #   docker run --rm -d --name pantalk-ghost --shm-size=1g \
-#     -p 127.0.0.1:6902:6901 pantalk/ghost:local
-#   Open http://localhost:6902
+#     -p 127.0.0.1:6901:6901 -p 127.0.0.1:6902:6902 \
+#     pantalk/ghost:local
+#   Open http://localhost:6901
 
 ARG DESKTOP_IMAGE=ghcr.io/pdparchitect/launcher-image-base-desktop:0.1.3
 FROM ${DESKTOP_IMAGE}

@@ -48,7 +48,9 @@ wait_for_url() {
 wait_for_url "The Lounge" \
   "http://127.0.0.1:${THELOUNGE_PORT:-9000}/"
 wait_for_url Ghost \
-  "http://127.0.0.1:${GHOST_PORT:-6902}/index.html"
+  "http://127.0.0.1:${GHOST_PORT:-6901}/index.html"
+wait_for_url "Ghost preview" \
+  "http://127.0.0.1:${GHOST_PREVIEW_PORT:-6902}/preview.jpg"
 
 for attempt in $(seq 1 60); do
   if ghost_pantalk ping >/dev/null 2>&1; then

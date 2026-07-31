@@ -20,7 +20,7 @@ export PANTALK_CONFIG="${PANTALK_CONFIG:-$HOME/.config/pantalk/config.yaml}"
 log_file=/var/log/launcher-desktop/pantalkd.log
 starter=/usr/local/share/ghost/pantalk-config.yaml
 
-mkdir -p "$(dirname "$PANTALK_CONFIG")" "$(dirname "$log_file")"
+mkdir -p "$(dirname "$PANTALK_CONFIG")"
 
 # Apple VirtioFS rejects chown and chmod, so both are best-effort. The
 # containing directory is already restricted in that case.
@@ -47,11 +47,29 @@ elif yq -e '
     echo "[ghost] migrated the bundled IRC configuration to the local starter"
 fi
 
+legacy_media_path=/home/ghost/.local/share/pantalk/media
+runtime_media_path="$XDG_DATA_HOME/pantalk/media"
+if yq -e ".server.media.path == \"$legacy_media_path\"" \
+    "$PANTALK_CONFIG" >/dev/null 2>&1; then
+    cp --update=none "$PANTALK_CONFIG" "${PANTALK_CONFIG}.ghost-home.bak"
+    migrated_config="$(mktemp)"
+    if yq ".server.media.path = \"$runtime_media_path\"" \
+        "$PANTALK_CONFIG" > "$migrated_config"; then
+        install_runtime_file "$migrated_config" "$PANTALK_CONFIG"
+    else
+        rm -f "$migrated_config"
+        exit 1
+    fi
+    rm -f "$migrated_config"
+    echo "[ghost] migrated Pantalk media storage to $runtime_media_path"
+fi
+
 if [ "${PANTALK_AUTOSTART:-true}" != "true" ]; then
     echo "[ghost] pantalkd autostart disabled"
     exit 0
 fi
 
+mkdir -p "$(dirname "$log_file")"
 touch "$log_file"
 chown "$runtime_user:$runtime_user" "$log_file" 2>/dev/null || true
 
