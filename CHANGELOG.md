@@ -6,6 +6,15 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-07-31
+
+### Fixed
+
+- Update the shared Launcher desktop base to `0.1.3` so fixed-ownership mounts
+  retain their host-managed permissions under Apple `container`.
+- Write Codex and Claude runtime configuration without requesting ownership
+  changes after the desktop selects the VM root account.
+
 ## [0.1.6] - 2026-07-30
 
 ### Added

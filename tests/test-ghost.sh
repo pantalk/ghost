@@ -104,6 +104,13 @@ grep -Fq 'hasTrustDialogAccepted' "$trust"
 grep -Fq 'GHOST_HARNESS_WORKDIR:-/workspace' "$trust"
 grep -Fq 'GHOST_HARNESS_WORKDIR:-/workspace' \
     "$overlay_dir/usr/local/bin/desktop-harness"
+# Apple `container` runs the desktop as root after detecting fixed-ownership
+# mounts. That path must copy configuration without requesting an ownership
+# change which VirtioFS will reject.
+grep -Fq 'if [ "$runtime_user" = root ]; then' "$trust"
+grep -Fq 'if [ "$runtime_user" != root ]; then' "$trust"
+grep -Fq 'write_runtime_config()' "$trust"
+! grep -Fq 'install_as_runtime_user' "$trust"
 
 # Pantalk itself: the starter config is seeded and the daemon is supervised
 # from the base's pre-session hook.
