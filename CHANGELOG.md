@@ -6,6 +6,13 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-07-31
+
+### Added
+
+- Update to Launcher desktop substrate `0.1.7` and register its shared health
+  and native-notification bridge interfaces.
+
 ## [0.1.10] - 2026-07-31
 
 ### Fixed
