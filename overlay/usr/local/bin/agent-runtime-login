@@ -37,10 +37,10 @@ if { [ -t 1 ] || [ -t 2 ] || [ "${FORCE_COLOR:-}" = "1" ]; } &&
     style_reset=$'\033[0m'
     style_bold=$'\033[1m'
     style_dim=$'\033[2m'
-    style_accent=$'\033[38;5;255m'
-    style_info=$'\033[38;5;75m'
-    style_success=$'\033[38;5;78m'
-    style_error=$'\033[38;5;203m'
+    style_accent=$'\033[38;2;36;219;201m'
+    style_info=$'\033[38;2;80;226;212m'
+    style_success=$'\033[38;2;36;219;201m'
+    style_error=$'\033[38;2;224;122;138m'
 fi
 
 print_heading() {

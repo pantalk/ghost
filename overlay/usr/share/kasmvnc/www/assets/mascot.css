@@ -12,6 +12,15 @@
  * the two in sync when either changes.
  */
 
+/* Match the site's page token while the remote framebuffer is connecting or
+ * resizing. This stylesheet loads after the base KasmVNC overrides. */
+body,
+#noVNC_container,
+.noVNC_container,
+#noVNC_transition {
+  background-color: #080A0C !important;
+}
+
 #pantalk_mascot {
   /* Same tokens as the site's :root, in the same channel-list form so the
      hsl(... / <alpha>) opacities below match Tailwind's bg-accent/20 etc. */

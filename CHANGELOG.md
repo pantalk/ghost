@@ -6,8 +6,13 @@ All notable changes to Pantalk Ghost are documented here, following
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-07-31
+
 ### Changed
 
+- Apply the Pantalk site's dark-theme tokens across the desktop wallpaper,
+  KasmVNC surround, Openbox chrome and menus, Tint2 panel, browser landing
+  page, terminal, runtime login, greeting, and daemon status.
 - Use port `6901` for the interactive desktop in local runs, documentation,
   continuous integration, and bundled deployments. Port `6902` remains the
   separate Launcher preview interface.
